@@ -8,11 +8,18 @@ public class RTSCamera : MonoBehaviour
 
 	void Update()
 	{
-		// Panning
-		if (Input.GetKey(KeyCode.W)) transform.Translate(Vector3.forward * panSpeed * Time.deltaTime, Space.World);
-		if (Input.GetKey(KeyCode.S)) transform.Translate(Vector3.back * panSpeed * Time.deltaTime, Space.World);
-		if (Input.GetKey(KeyCode.A)) transform.Translate(Vector3.left * panSpeed * Time.deltaTime, Space.World);
-		if (Input.GetKey(KeyCode.D)) transform.Translate(Vector3.right * panSpeed * Time.deltaTime, Space.World);
+		// Panning (relative to camera's horizontal facing direction)
+		Vector3 forward = transform.forward;
+		Vector3 right = transform.right;
+		forward.y = 0f;
+		right.y = 0f;
+		forward.Normalize();
+		right.Normalize();
+
+		if (Input.GetKey(KeyCode.W)) transform.Translate(forward * panSpeed * Time.deltaTime, Space.World);
+		if (Input.GetKey(KeyCode.S)) transform.Translate(-forward * panSpeed * Time.deltaTime, Space.World);
+		if (Input.GetKey(KeyCode.A)) transform.Translate(-right * panSpeed * Time.deltaTime, Space.World);
+		if (Input.GetKey(KeyCode.D)) transform.Translate(right * panSpeed * Time.deltaTime, Space.World);
 
 		// Rotation
 		if (Input.GetKey(KeyCode.Q)) transform.Rotate(Vector3.up, -rotateSpeed * Time.deltaTime, Space.World);

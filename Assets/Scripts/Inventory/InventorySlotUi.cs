@@ -2,55 +2,58 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class InventorySlotUI : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDragHandler
+public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 {
-	public Image icon;
-	public Item currentItem;
-	private Transform originalParent;
-	private Canvas canvas;
+	[SerializeField] private Image iconImage;
+	[SerializeField] private Image slotBackground;
 
-	private void Start()
-	{
-		canvas = GetComponentInParent<Canvas>();
-		icon.enabled = false;
-	}
+	[Header("Colors")]
+	[SerializeField] private Color normalColor = Color.white;
+	[SerializeField] private Color selectedColor = new Color(1f, 0.85f, 0.3f);
 
-	public void SetItem(Item item)
+	private Item currentItem;
+	private int slotIndex;
+	private EquipmentManager equipment;
+
+	public System.Action<InventorySlotUI> OnClicked;
+	public Item CurrentItem => currentItem;
+
+	public void Refresh(Item item, int index, EquipmentManager equipmentManager)
 	{
 		currentItem = item;
-		if (item != null)
+		slotIndex = index;
+		equipment = equipmentManager;
+
+		// Equipped items live in their equip slot — hide them here
+		bool isEquipped = equipmentManager != null && equipmentManager.IsInventorySlotEquipped(index);
+		Item displayItem = isEquipped ? null : item;
+
+		if (displayItem != null && displayItem.icon != null)
 		{
-			icon.sprite = item.icon;
-			icon.enabled = true;
+			iconImage.sprite = displayItem.icon;
+			iconImage.color = Color.white;
 		}
 		else
 		{
-			icon.enabled = false;
+			iconImage.sprite = null;
+			iconImage.color = Color.clear;
 		}
+
+		if (slotBackground != null)
+			slotBackground.color = normalColor;
 	}
 
-	public void OnPointerDown(PointerEventData eventData)
+	public void SetSelected(bool selected)
 	{
-		if (currentItem != null)
-		{
-			originalParent = transform.parent;
-			icon.transform.SetParent(canvas.transform);
-		}
+		if (slotBackground != null)
+			slotBackground.color = selected ? selectedColor : normalColor;
 	}
 
-	public void OnDrag(PointerEventData eventData)
+	public void OnPointerClick(PointerEventData eventData)
 	{
-		if (currentItem != null)
-			icon.transform.position = Input.mousePosition;
-	}
-
-	public void OnEndDrag(PointerEventData eventData)
-	{
-		if (currentItem != null)
-		{
-			// Here you can implement drop logic to a slot
-			icon.transform.SetParent(originalParent);
-			icon.transform.localPosition = Vector3.zero;
-		}
+		// Ignore click on empty slots or currently equipped slots
+		if (currentItem == null) return;
+		if (equipment != null && equipment.IsInventorySlotEquipped(slotIndex)) return;
+		OnClicked?.Invoke(this);
 	}
 }

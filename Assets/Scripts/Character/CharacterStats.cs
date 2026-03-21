@@ -4,6 +4,8 @@ using UnityEngine;
 public class CharacterStats : MonoBehaviour
 {
 	[Header("Base Stats")]
+	[Min(1f)] public float maxHealth = 100f;
+	public float currentHealth = 100f;
 	public float hunger = 100f;
 	public float thirst = 100f;
 	public float tiredness = 0f;
@@ -13,12 +15,22 @@ public class CharacterStats : MonoBehaviour
 	public float thirstLossRate = 3f;
 	public float tirednessGainRate = 1f;
 
+	// TODO: Replace with a real skill-based calculation once the skill system is implemented.
+	// Higher values = faster harvesting. E.g. a Foraging skill of 50 could give 1.5x speed.
+	public float HarvestSpeedMultiplier => 1.0f;
+
 	private TimeManager timeManager;
 	public float lastHour;
 
+	public bool IsAlive => currentHealth > 0f;
+	public event System.Action<float, GameObject> OnDamaged;
+	public event System.Action<GameObject> OnDied;
+
 	void Start()
 	{
-		timeManager = FindObjectOfType<TimeManager>();
+		currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
+
+		timeManager = FindFirstObjectByType<TimeManager>();
 		if (timeManager != null)
 			timeManager.OnTimeChanged += HandleTimeChanged;
 	}
@@ -71,6 +83,31 @@ public class CharacterStats : MonoBehaviour
 		StartCoroutine(SleepRoutine(sleepHours));
 	}
 
+	public void ReceiveDamage(float amount, GameObject source = null)
+	{
+		if (!IsAlive || amount <= 0f)
+			return;
+
+		// Contract: source should be the attacker actor root GameObject when known.
+		// Consumers (retaliation, aggro) may resolve attacker data from this reference.
+		currentHealth = Mathf.Max(0f, currentHealth - amount);
+		OnDamaged?.Invoke(amount, source);
+
+		if (!IsAlive)
+		{
+			Debug.Log($"{name} died.");
+			OnDied?.Invoke(source);
+		}
+	}
+
+	public void Heal(float amount)
+	{
+		if (amount <= 0f || !IsAlive)
+			return;
+
+		currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+	}
+
 	private IEnumerator SleepRoutine(float sleepHours)
 	{
 		float inGameHoursSlept = 0f;
@@ -96,9 +133,9 @@ public class CharacterStats : MonoBehaviour
 			hunger = Mathf.Max(0f, hunger - hungerLossRate * 0.5f);
 			thirst = Mathf.Max(0f, thirst - thirstLossRate * 0.5f);
 
-			Debug.Log($"{name} slept {inGameHoursSlept}h so far — tiredness now {tiredness}");
+			Debug.Log($"{name} slept {inGameHoursSlept}h so far ï¿½ tiredness now {tiredness}");
 		}
 
-		Debug.Log($"{name} woke up after {sleepHours}h sleep — final tiredness {tiredness}");
+		Debug.Log($"{name} woke up after {sleepHours}h sleep ï¿½ final tiredness {tiredness}");
 	}
 }

@@ -5,12 +5,25 @@ public class SelectionManager : MonoBehaviour
 {
 	public Camera mainCamera;
 	public List<SelectableCharacter> selectedCharacters = new List<SelectableCharacter>();
+	[SerializeField] private InventoryUI inventoryUI;
+
+	public System.Action<IReadOnlyList<SelectableCharacter>> OnSelectionChanged;
+	public SelectableCharacter PrimarySelected => selectedCharacters.Count > 0 ? selectedCharacters[0] : null;
 
 	private Vector2 dragStartPos;
 	private bool isDragging = false;
 
+	private void Start()
+	{
+		if (inventoryUI == null)
+			inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
+	}
+
 	void Update()
 	{
+		if (Input.GetKeyDown(KeyCode.I))
+			inventoryUI?.ToggleForCharacter(PrimarySelected);
+
 		HandleMouseInput();
 	}
 
@@ -45,6 +58,8 @@ public class SelectionManager : MonoBehaviour
 		// Right-click to interact or move
 		if (Input.GetMouseButtonDown(1))
 		{
+			if (selectedCharacters.Count == 0) return;
+
 			Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 			if (Physics.Raycast(ray, out RaycastHit hit))
 			{
@@ -76,6 +91,7 @@ public class SelectionManager : MonoBehaviour
 	void HandleClickSelection()
 	{
 		bool shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+		bool selectionChanged = false;
 
 		Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 		if (Physics.Raycast(ray, out RaycastHit hit))
@@ -90,30 +106,36 @@ public class SelectionManager : MonoBehaviour
 						// Deselect if shift is held
 						character.SetSelected(false);
 						selectedCharacters.Remove(character);
+						selectionChanged = true;
 					}
 				}
 				else
 				{
 					if (!shiftHeld)
 					{
-						DeselectAll();
+						selectionChanged |= DeselectAll();
 					}
 					character.SetSelected(true);
 					selectedCharacters.Add(character);
+					selectionChanged = true;
 				}
 			}
 			else if (!shiftHeld)
 			{
 				// Clicked empty space without shift: deselect all
-				DeselectAll();
+				selectionChanged |= DeselectAll();
 			}
 		}
+
+		if (selectionChanged)
+			NotifySelectionChanged();
 	}
 
 	void HandleDragSelection()
 	{
 		bool shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 		Rect selectionRect = GetScreenRect(dragStartPos, Input.mousePosition);
+		bool selectionChanged = false;
 
 		SelectableCharacter[] allCharacters = FindObjectsOfType<SelectableCharacter>();
 
@@ -129,6 +151,7 @@ public class SelectionManager : MonoBehaviour
 				{
 					selectedCharacters.Add(character);
 					character.SetSelected(true);
+					selectionChanged = true;
 				}
 			}
 			else if (!shiftHeld)
@@ -137,18 +160,31 @@ public class SelectionManager : MonoBehaviour
 				{
 					selectedCharacters.Remove(character);
 					character.SetSelected(false);
+					selectionChanged = true;
 				}
 			}
 		}
+
+		if (selectionChanged)
+			NotifySelectionChanged();
 	}
 
-	void DeselectAll()
+	bool DeselectAll()
 	{
+		if (selectedCharacters.Count == 0)
+			return false;
+
 		foreach (var c in selectedCharacters)
 		{
 			c.SetSelected(false);
 		}
 		selectedCharacters.Clear();
+		return true;
+	}
+
+	private void NotifySelectionChanged()
+	{
+		OnSelectionChanged?.Invoke(selectedCharacters);
 	}
 
 	Rect GetScreenRect(Vector2 start, Vector2 end)
