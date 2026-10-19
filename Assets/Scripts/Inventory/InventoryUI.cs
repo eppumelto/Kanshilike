@@ -9,6 +9,9 @@ public class InventoryUI : MonoBehaviour
 	[SerializeField] private EquipSlotUI[] equipSlots;
 	[SerializeField] private SelectionManager selectionManager;
 
+	[Tooltip("Uses/equips the selected inventory item, or unequips the selected equip slot. Not Q/E: those rotate the camera.")]
+	[SerializeField] private KeyCode useKey = KeyCode.F;
+
 	private InventorySlotUI selectedSlot;
 	private bool equipSlotSelected;
 	private EquipSlot selectedEquipSlot;
@@ -46,7 +49,7 @@ public class InventoryUI : MonoBehaviour
 
 	private void Update()
 	{
-		if (Input.GetKeyDown(KeyCode.E))
+		if (Input.GetKeyDown(useKey))
 			UseSelected();
 	}
 
