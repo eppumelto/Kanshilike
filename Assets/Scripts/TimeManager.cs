@@ -4,7 +4,8 @@ using System;
 public class TimeManager : MonoBehaviour
 {
 	[Header("Time Settings")]
-	public float timeMultiplier = 60f; // 1 real sec = 1 in-game minute
+	[Tooltip("In-game hours that pass per real minute. 0.5 = one in-game hour every 2 real minutes (a 48-minute day).")]
+	public float timeMultiplier = 0.5f;
 	public float startTime = 8f; // start at 8:00 AM
 	[Range(0, 24)] public float currentTime; // current time of day in hours
 
@@ -30,7 +31,7 @@ public class TimeManager : MonoBehaviour
 	void UpdateTime()
 	{
 		currentTime += Time.deltaTime * (timeMultiplier / 60f); // convert to hours
-		if (currentTime >= 24f) currentTime = 0f;
+		if (currentTime >= 24f) currentTime -= 24f;
 
 		OnTimeChanged?.Invoke(currentTime);
 	}
