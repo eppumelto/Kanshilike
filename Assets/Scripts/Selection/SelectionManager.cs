@@ -82,7 +82,7 @@ public class SelectionManager : MonoBehaviour
 				{
 					// Move
 					foreach (var c in selectedCharacters)
-						c.MoveTo(hit.point);
+						c.CommandMove(hit.point);
 				}
 			}
 		}

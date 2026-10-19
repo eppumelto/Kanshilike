@@ -16,8 +16,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private Inventory inventory;
 	private SkillSet skillSet;
 	private EquipmentManager equipmentManager;
-	private Coroutine pendingAttackRoutine;
 	private Coroutine combatLoopRoutine;
+	private GameObject activeActionLabel;
 	private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
 
 	// Athletics XP: award XP per unit of distance traveled
@@ -109,48 +109,75 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			agent.SetDestination(position);
 	}
 
-	public void InteractWith(IInteractable target, string actionId)
+	/// <summary>Player move order: drops whatever the character was doing and walks there.</summary>
+	public void CommandMove(Vector3 position)
 	{
-		if (IsAttackAction(actionId))
-		{
-			StopAllCoroutines();
-			combatLoopRoutine = StartCoroutine(CombatLoop(target, actionId));
+		if (!IsAlive)
 			return;
-		}
 
-		if (!string.Equals(actionId, "attack", System.StringComparison.OrdinalIgnoreCase))
-			ReleaseReservedSlot();
-
-		StopAllCoroutines();
-		StartCoroutine(MoveAndPerform(target, actionId));
+		CancelCurrentAction();
+		MoveTo(position);
 	}
 
+	public void InteractWith(IInteractable target, string actionId)
+	{
+		if (!IsAlive)
+			return;
+
+		CancelCurrentAction();
+
+		if (IsAttackAction(actionId))
+			combatLoopRoutine = StartCoroutine(CombatLoop(target, actionId));
+		else
+			StartCoroutine(MoveAndPerform(target, actionId));
+	}
+
+	private bool IsAlive => stats == null || stats.IsAlive;
+
+	private void CancelCurrentAction()
+	{
+		StopAllCoroutines();
+		combatLoopRoutine = null;
+		ClearActionLabel();
+		ReleaseReservedSlot();
+	}
+
+	// Walks into range, swings, waits out the attack interval, repeats until the target dies,
+	// disappears, or the player gives another order.
 	private IEnumerator CombatLoop(IInteractable target, string actionId)
 	{
+		if (combatFormulaConfig == null)
+		{
+			Debug.LogWarning($"[Combat] {characterName} has no CombatFormulaConfig assigned.");
+			yield break;
+		}
+
 		while (IsTargetValid(target) && stats != null && stats.IsAlive)
 		{
-			if (target is Component targetComponent)
+			if (target is not Component targetComponent)
+				break;
+
+			CharacterStats targetStats = targetComponent.GetComponent<CharacterStats>();
+			if (targetStats != null && !targetStats.IsAlive)
+				break;
+
+			AttackProfile profile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
+			if (Vector3.Distance(transform.position, targetComponent.transform.position) > profile.Range)
 			{
-				CharacterStats targetStats = targetComponent.GetComponent<CharacterStats>();
-				if (targetStats != null && !targetStats.IsAlive)
-					break;
+				MoveTo(targetComponent.transform.position);
+				yield return null;
+				continue;
 			}
 
+			if (agent != null)
+				agent.ResetPath();
+
 			target.ExecuteInteraction(this, actionId);
-			yield return new WaitForSeconds(GetCurrentAttackInterval());
+			yield return new WaitForSeconds(Mathf.Max(0.1f, profile.Interval));
 		}
 
 		combatLoopRoutine = null;
 		ReleaseReservedSlot();
-	}
-
-	private float GetCurrentAttackInterval()
-	{
-		if (combatFormulaConfig == null)
-			return 0.8f;
-
-		AttackProfile profile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
-		return Mathf.Max(0.1f, profile.Interval);
 	}
 
 	private static bool IsAttackAction(string actionId)
@@ -180,14 +207,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			float scaledDuration = duration / stats.HarvestSpeedMultiplier;
 
 			// Show a floating action label above the character while waiting.
-			GameObject label = null;
 			if (harvestingLabelPrefab != null)
 			{
-					label = Instantiate(harvestingLabelPrefab);
-						label.transform.SetParent(transform);
-						// label.transform.localPosition = Vector3.up * 2.5f;
-						// label.transform.localRotation = Quaternion.identity;
-				var actionLabel = label.GetComponent<HarvestingLabel>();
+				activeActionLabel = Instantiate(harvestingLabelPrefab);
+				activeActionLabel.transform.SetParent(transform);
+				var actionLabel = activeActionLabel.GetComponent<HarvestingLabel>();
 				if (actionLabel != null)
 				{
 					string text = target.GetInteractionLabel(actionId);
@@ -198,13 +222,19 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 			yield return new WaitForSeconds(scaledDuration);
 
-			if (label != null)
-				Destroy(label);
+			ClearActionLabel();
 		}
 
 		// Another character may have picked up or used up the target while we walked or worked.
 		if (CanStillPerform(target, actionId))
 			target.ExecuteInteraction(this, actionId);
+	}
+
+	private void ClearActionLabel()
+	{
+		if (activeActionLabel != null)
+			Destroy(activeActionLabel);
+		activeActionLabel = null;
 	}
 
 	private bool CanStillPerform(IInteractable target, string actionId)
@@ -258,26 +288,16 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		if (stats != null && !stats.IsAlive)
 			return;
 
+		// Target already has its maximum number of attackers; CombatLoop keeps us close and retries.
 		if (!TryReserveTargetSlot(targetComponent))
-		{
-			MoveTo(targetComponent.transform.position);
 			return;
-		}
 
-		Debug.Log($"{characterName} is attacking {target}");
 		AttackProfile attackerProfile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
-		Debug.Log($"[Combat] {characterName} cadence interval: {attackerProfile.Interval:F2}s");
 
+		// CombatLoop walks into range before calling Attack, so this only trips if the target moved away.
 		float distance = Vector3.Distance(transform.position, targetComponent.transform.position);
 		if (distance > attackerProfile.Range)
-		{
-			MoveTo(targetComponent.transform.position);
-			if (pendingAttackRoutine != null)
-				StopCoroutine(pendingAttackRoutine);
-			pendingAttackRoutine = StartCoroutine(RetryAttackInRange(target, targetComponent, attackerProfile.Range));
-			Debug.Log($"[Combat] {characterName} is out of range ({distance:F1} > {attackerProfile.Range:F1}) and moves closer.");
 			return;
-		}
 
 		CharacterStats defenderStats = targetComponent.GetComponent<CharacterStats>();
 		if (defenderStats == null)
@@ -357,25 +377,12 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 	private void OnDisable()
 	{
-		if (combatLoopRoutine != null)
-			StopCoroutine(combatLoopRoutine);
-
-		ReleaseReservedSlot();
+		CancelCurrentAction();
 	}
 
 	private void ReleaseReservedSlot()
 	{
 		reservedTargetSlot.Release(gameObject);
-	}
-
-	private IEnumerator RetryAttackInRange(IInteractable target, Component targetComponent, float range)
-	{
-		while (targetComponent != null && Vector3.Distance(transform.position, targetComponent.transform.position) > range)
-			yield return null;
-
-		pendingAttackRoutine = null;
-		if (targetComponent != null)
-			Attack(target);
 	}
 
 	public void collectItem(Item item, float harvestXP = 15f)
