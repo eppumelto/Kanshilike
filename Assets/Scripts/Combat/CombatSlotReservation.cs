@@ -21,12 +21,13 @@ public sealed class CombatSlotReservation
             return slotController.IsActiveAttacker(attacker);
 
         Release(attacker);
-        if (!slotController.TryEnterCombat(attacker))
-            return false;
 
+        // Remember the target even when we only got a place in its queue, so Release can
+        // take us back out of the queue. Otherwise an attacker that gives up while queued
+        // is later promoted into an active slot it never uses.
         reservedSlots = slotController;
         reservedTarget = targetComponent;
-        return true;
+        return slotController.TryEnterCombat(attacker);
     }
 
     public void Release(GameObject attacker)

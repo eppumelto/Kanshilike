@@ -107,7 +107,10 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
         }
 
         if (stats != null)
+        {
             stats.OnDamaged += HandleDamaged;
+            stats.OnDied += HandleDied;
+        }
 
         ApplyBaseAgentSettings();
         EnterIdle();
@@ -304,9 +307,24 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
     private void OnDisable()
     {
         if (stats != null)
+        {
             stats.OnDamaged -= HandleDamaged;
+            stats.OnDied -= HandleDied;
+        }
 
         ReleaseCombatSlot();
+    }
+
+    private void HandleDied(GameObject killer)
+    {
+        // Update() stops ticking once dead, so free the target's attack slot and stop moving here.
+        ReleaseCombatSlot();
+        aggroMemory.Clear();
+        if (agent.isOnNavMesh)
+        {
+            agent.ResetPath();
+            agent.isStopped = true;
+        }
     }
 
     private void HandleDamaged(float damage, GameObject source)
