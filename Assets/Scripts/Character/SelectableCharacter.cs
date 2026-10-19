@@ -127,7 +127,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 	private IEnumerator CombatLoop(IInteractable target, string actionId)
 	{
-		while (target != null && stats != null && stats.IsAlive)
+		while (IsTargetValid(target) && stats != null && stats.IsAlive)
 		{
 			if (target is Component targetComponent)
 			{
@@ -168,6 +168,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 		while (Vector3.Distance(transform.position, dest) > 2f)
 		{
+			if (!CanStillPerform(target, actionId))
+				yield break;
 			yield return null;
 		}
 
@@ -200,7 +202,27 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 				Destroy(label);
 		}
 
-		target.ExecuteInteraction(this, actionId);
+		// Another character may have picked up or used up the target while we walked or worked.
+		if (CanStillPerform(target, actionId))
+			target.ExecuteInteraction(this, actionId);
+	}
+
+	private bool CanStillPerform(IInteractable target, string actionId)
+	{
+		if (!IsTargetValid(target))
+			return false;
+
+		foreach (var option in target.GetAvailableInteractions(this))
+			if (option.id == actionId)
+				return true;
+		return false;
+	}
+
+	private static bool IsTargetValid(IInteractable target)
+	{
+		// Destroyed Unity objects only compare equal to null through UnityEngine.Object's
+		// operator, which a plain interface null check bypasses.
+		return target is UnityEngine.Object unityObject ? unityObject != null : target != null;
 	}
 
 	public void Drink(float amount)

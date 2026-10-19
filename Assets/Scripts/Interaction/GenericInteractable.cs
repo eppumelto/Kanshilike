@@ -49,6 +49,10 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 	[SerializeField] private string objectName = "Object";
 	[SerializeField] private List<InteractionEntry> interactions = new List<InteractionEntry>();
 
+	// Set once the object has been picked up or depleted. Destroy() only takes effect at the
+	// end of the frame, so without this several characters could all collect the same object.
+	private bool consumed;
+
 	void Start()
 	{
 		foreach (var entry in interactions)
@@ -79,9 +83,12 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 	public List<InteractionOption> GetAvailableInteractions(SelectableCharacter interactor)
 	{
 		var options = new List<InteractionOption>();
+		if (consumed)
+			return options;
+
 		foreach (var entry in interactions)
 		{
-			if (entry.maxUses > 0 && entry.usesRemaining <= 0)
+			if (IsExhausted(entry))
 				continue;
 			options.Add(new InteractionOption(entry.id, entry.displayName));
 		}
@@ -91,7 +98,7 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 	public void ExecuteInteraction(SelectableCharacter interactor, string actionId)
 	{
 		var entry = interactions.Find(e => e.id == actionId);
-		if (entry == null) return;
+		if (entry == null || consumed || IsExhausted(entry)) return;
 
 		switch (entry.actionType)
 		{
@@ -106,6 +113,7 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 				break;
 			case InteractionActionType.Collect:
 				interactor.collectItem(entry.item);
+				consumed = true;
 				Destroy(gameObject);
 				return; // object destroyed, skip use decrement
 			case InteractionActionType.Attack:
@@ -118,6 +126,7 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 					entry.usesRemaining--;
 					if (entry.usesRemaining <= 0 && entry.depletedPrefab != null)
 					{
+						consumed = true;
 						Instantiate(entry.depletedPrefab, transform.position, transform.rotation);
 						Destroy(gameObject);
 					}
@@ -130,4 +139,6 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 	}
 
 	public Vector3 GetInteractionPoint() => transform.position;
+
+	private static bool IsExhausted(InteractionEntry entry) => entry.maxUses > 0 && entry.usesRemaining <= 0;
 }
