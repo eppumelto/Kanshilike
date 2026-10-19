@@ -42,19 +42,27 @@ public static class WolfPassiveStateExecutor
 
     public static WolfStateTransition TickFleeing(
         Transform self,
-        Transform detectedTarget,
+        Transform threat,
         NavMeshAgent agent,
         AnimalPersonality personality)
     {
-        if (detectedTarget != null)
+        bool reachedDestination = !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance;
+
+        // Keep running until the threat is at least fleeSafeDistance away, whether or not it is
+        // still in view (a fleeing animal faces away from what it is running from).
+        bool stillInDanger = threat != null
+            && Vector3.Distance(self.position, threat.position) < personality.fleeSafeDistance;
+
+        if (stillInDanger)
         {
-            if (WolfNavigationUtility.TryGetFleePoint(self.position, detectedTarget.position, personality.fleeDistance, out Vector3 fleeDestination))
+            // Only pick a new flee point once the current one is reached, rather than every frame.
+            if ((reachedDestination || !agent.hasPath)
+                && WolfNavigationUtility.TryGetFleePoint(self.position, threat.position, personality.fleeDistance, out Vector3 fleeDestination))
                 agent.SetDestination(fleeDestination);
 
             return WolfStateTransition.None;
         }
 
-        bool reachedDestination = !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance;
         return reachedDestination ? WolfStateTransition.EnterIdle : WolfStateTransition.None;
     }
 }

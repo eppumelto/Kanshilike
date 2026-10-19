@@ -44,6 +44,13 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
     /// <summary>Currently detected threat (nearest player character in LoS).</summary>
     private Transform detectedTarget;
     private SelectableCharacter detectedCharacter;
+
+    /// <summary>
+    /// The character this predator is reacting to. Locked in when first seen and kept while
+    /// chasing/fleeing even if it leaves the vision cone; distance thresholds end the reaction.
+    /// </summary>
+    private Transform threat;
+    private SelectableCharacter threatCharacter;
     private readonly WolfAggroMemory aggroMemory = new WolfAggroMemory();
 
     private CharacterStats stats;
@@ -148,6 +155,15 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
 
         detectedTarget = detection.Target;
         detectedCharacter = detection.Character;
+
+        if (detectedTarget != null)
+            SetThreat(detectedTarget, detectedCharacter);
+    }
+
+    private void SetThreat(Transform target, SelectableCharacter character)
+    {
+        threat = target;
+        threatCharacter = character;
     }
 
     // ------------------------------------------------------------------ //
@@ -173,6 +189,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
     private void EnterIdle()
     {
         ReleaseCombatSlot();
+        SetThreat(null, null);
         currentState = PredatorState.Idle;
         agent.ResetPath();
         agent.speed = personality.roamSpeed;
@@ -254,7 +271,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
 
     private void TickFleeing()
     {
-        WolfStateTransition transition = WolfPassiveStateExecutor.TickFleeing(transform, detectedTarget, agent, personality);
+        WolfStateTransition transition = WolfPassiveStateExecutor.TickFleeing(transform, threat, agent, personality);
         if (transition == WolfStateTransition.EnterIdle)
         {
             ApplyBaseAgentSettings();
@@ -283,8 +300,8 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
             personality,
             combatFormulaConfig,
             reservedTargetSlot,
-            detectedTarget,
-            detectedCharacter,
+            threat,
+            threatCharacter,
             ref nextAttackTime);
 
         if (result == WolfChaseStepResult.ReturnToIdle)
@@ -343,6 +360,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
 
         detectedCharacter = attacker;
         detectedTarget = attacker.transform;
+        SetThreat(attacker.transform, attacker);
         aggroMemory.Set(attacker, Time.time, retaliationMemorySeconds);
 
         // Getting hit should interrupt non-combat states and enforce short retaliatory aggro.

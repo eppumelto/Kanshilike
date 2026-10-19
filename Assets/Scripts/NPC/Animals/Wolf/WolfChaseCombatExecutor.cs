@@ -20,18 +20,19 @@ public static class WolfChaseCombatExecutor
         SelectableCharacter detectedCharacter,
         ref float nextAttackTime)
     {
-        if (combatFormulaConfig == null)
-        {
-            agent.SetDestination(detectedTarget != null ? detectedTarget.position : attackerObject.transform.position);
-            return WolfChaseStepResult.Continue;
-        }
-
         if (detectedTarget == null || detectedCharacter == null || detectedCharacter.Stats == null || !detectedCharacter.Stats.IsAlive)
             return WolfChaseStepResult.ReturnToIdle;
 
         float dist = Vector3.Distance(attackerObject.transform.position, detectedTarget.position);
         if (WolfDecisionUtility.ShouldGiveUpChase(dist, personality.chaseGiveUpDistance))
             return WolfChaseStepResult.ReturnToIdle;
+
+        if (combatFormulaConfig == null)
+        {
+            // No combat configured: just follow the target.
+            agent.SetDestination(detectedTarget.position);
+            return WolfChaseStepResult.Continue;
+        }
 
         if (!reservedTargetSlot.TryReserve(attackerObject, detectedCharacter))
         {
