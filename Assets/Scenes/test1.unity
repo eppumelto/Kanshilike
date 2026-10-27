@@ -9525,9 +9525,12 @@ MonoBehaviour:
   hunger: 100
   thirst: 100
   tiredness: 0
+  hasNeeds: 1
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  starvationDamagePerHour: 3
+  dehydrationDamagePerHour: 5
   lastHour: 0
 --- !u!114 &1440672251
 MonoBehaviour:
@@ -10301,9 +10304,12 @@ MonoBehaviour:
   hunger: 100
   thirst: 100
   tiredness: 0
+  hasNeeds: 0
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  starvationDamagePerHour: 3
+  dehydrationDamagePerHour: 5
   lastHour: 0
 --- !u!1 &1637607527
 GameObject:
@@ -10650,9 +10656,12 @@ MonoBehaviour:
   hunger: 100
   thirst: 100
   tiredness: 0
+  hasNeeds: 1
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  starvationDamagePerHour: 3
+  dehydrationDamagePerHour: 5
   lastHour: 0
 --- !u!114 &1706174145
 MonoBehaviour:

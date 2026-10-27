@@ -11,9 +11,15 @@ public class CharacterStats : MonoBehaviour
 	public float tiredness = 0f;
 
 	[Header("Rates (per hour)")]
+	[Tooltip("Off for creatures that have no way to eat or drink yet (e.g. wolves): their hunger, thirst and tiredness stay put.")]
+	public bool hasNeeds = true;
 	public float hungerLossRate = 2f;
 	public float thirstLossRate = 3f;
 	public float tirednessGainRate = 1f;
+
+	[Header("Starvation (HP lost per in-game hour while the bar is empty)")]
+	[Min(0f)] public float starvationDamagePerHour = 3f;
+	[Min(0f)] public float dehydrationDamagePerHour = 5f;
 
 	// TODO: Replace with a real skill-based calculation once the skill system is implemented.
 	// Higher values = faster harvesting. E.g. a Foraging skill of 50 could give 1.5x speed.
@@ -23,6 +29,8 @@ public class CharacterStats : MonoBehaviour
 	public float lastHour;
 
 	public bool IsAlive => currentHealth > 0f;
+	public bool IsStarving => hasNeeds && hunger <= 0f;
+	public bool IsDehydrated => hasNeeds && thirst <= 0f;
 	public event System.Action<float, GameObject> OnDamaged;
 	public event System.Action<GameObject> OnDied;
 
@@ -53,7 +61,7 @@ public class CharacterStats : MonoBehaviour
 
 	void UpdateStats(float currentHour)
 	{
-		if (!IsAlive)
+		if (!IsAlive || !hasNeeds)
 			return;
 
 		float hungerRate = hungerLossRate;
@@ -69,6 +77,25 @@ public class CharacterStats : MonoBehaviour
 		tiredness = Mathf.Min(100f, tiredness + tiredRate);
 
 		Debug.Log($"{name} -> H:{hunger} T:{thirst} Td:{tiredness}");
+
+		ApplyStarvation();
+	}
+
+	// Empty hunger/thirst bars hurt every hour until the character eats/drinks or dies.
+	void ApplyStarvation()
+	{
+		float damage = 0f;
+		if (IsStarving)
+			damage += starvationDamagePerHour;
+		if (IsDehydrated)
+			damage += dehydrationDamagePerHour;
+
+		if (damage <= 0f)
+			return;
+
+		string cause = IsStarving && IsDehydrated ? "starving and dehydrated" : IsStarving ? "starving" : "dehydrated";
+		Debug.LogWarning($"{name} is {cause}: -{damage} HP ({Mathf.Max(0f, currentHealth - damage):F0} left).");
+		ReceiveDamage(damage, null);
 	}
 
 	public void Eat(float nutrition)
