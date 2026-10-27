@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Dexterity
   m_EditorClassIdentifier: Assembly-CSharp::SkillDefinition
   skillType: 5
-  displayName: 
+  displayName: Dexterity
   maxLevel: 100
   xpPerLevel:
     serializedVersion: 2

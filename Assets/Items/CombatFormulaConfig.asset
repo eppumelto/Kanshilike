@@ -15,15 +15,23 @@ MonoBehaviour:
   baseUnarmedDamage: 5
   baseUnarmedRange: 1.4
   baseAttackInterval: 1.2
-  strengthAttackWeight: 0.25
-  weaponSkillAttackWeight: 0.7
-  blockBasePower: 2
-  dodgeBasePower: 2
-  counterBasePower: 1
-  blockSkillWeight: 0.5
-  dodgeSkillWeight: 0.6
-  counterSkillWeight: 0.45
-  shieldBlockBonus: 3
+  minAttackInterval: 0.2
+  baseAttackRating: 10
+  weaponSkillAttackScale: 1
+  strengthAttackScale: 0.25
+  strengthDamageScale: 0.5
+  weaponSkillDamageScale: 0.5
+  initiativeSkill: 3
+  initiativeSkillScale: 0.4
+  initiativeStrengthScale: 0.2
+  blockBaseRating: 10
+  dodgeBaseRating: 8
+  counterBaseRating: 5
+  blockSkillScale: 1
+  dodgeSkillScale: 1
+  counterSkillScale: 1
+  shieldBlockMultiplier: 1.5
+  counterDamageFraction: 0.5
   strengthSkill: 2
   unarmedSkill: 0
   dodgeSkill: 3
@@ -32,3 +40,5 @@ MonoBehaviour:
   blockWeight: 1
   dodgeWeight: 1
   counterWeight: 0.6
+  defenseSuccessXP: 6
+  defenseFailXP: 2

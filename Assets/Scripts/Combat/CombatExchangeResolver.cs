@@ -33,36 +33,25 @@ public static class CombatExchangeResolver
         CombatReactionType reaction = CombatFormulaResolver.ChooseReaction(defender, config);
         onReactionDecided?.Invoke(reaction);
 
-        float attackRoll = attack.AttackPower + Random.Range(0f, 3f);
-        bool hitLanded = true;
+        float defenseRating = CombatFormulaResolver.GetDefenseRating(defender, reaction, config);
+        bool defended = Random.value < CombatFormulaResolver.GetDefenseChance(defenseRating, attack.AttackRating);
+        bool hitLanded = !defended;
         float counterDamage = 0f;
 
-        switch (reaction)
+        if (defended && reaction == CombatReactionType.Counter)
         {
-            case CombatReactionType.Block:
-            {
-                float blockPower = CombatFormulaResolver.GetBlockPower(defender, config) + Random.Range(0f, 2f);
-                hitLanded = attackRoll > blockPower;
-                break;
-            }
-            case CombatReactionType.Dodge:
-            {
-                float dodgePower = CombatFormulaResolver.GetDodgePower(defender, config) + Random.Range(0f, 2f);
-                hitLanded = attackRoll > dodgePower;
-                break;
-            }
-            case CombatReactionType.Counter:
-            {
-                float counterPower = CombatFormulaResolver.GetCounterPower(defender, config) + Random.Range(0f, 2f);
-                bool counterSucceeded = counterPower >= attackRoll;
-                if (counterSucceeded)
-                {
-                    hitLanded = false;
-                    counterDamage = Mathf.Max(1f, counterPower * 0.5f);
-                    attacker.Stats?.ReceiveDamage(counterDamage, defender.ActorTransform != null ? defender.ActorTransform.gameObject : null);
-                }
-                break;
-            }
+            // The defender's counter uses its own attack (weapon, bite or fists).
+            AttackProfile counterAttack = CombatFormulaResolver.BuildAttackProfile(defender, config);
+            counterDamage = Mathf.Max(1f, counterAttack.Damage * config.counterDamageFraction);
+            attacker.Stats?.ReceiveDamage(counterDamage, defender.ActorTransform != null ? defender.ActorTransform.gameObject : null);
+        }
+
+        // Defending trains the skill behind the reaction, more when it works.
+        if (reaction != CombatReactionType.None)
+        {
+            defender.Skills?.GainXP(
+                CombatFormulaResolver.GetReactionSkill(reaction, config),
+                defended ? config.defenseSuccessXP : config.defenseFailXP);
         }
 
         if (hitLanded)

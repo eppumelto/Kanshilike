@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Block
   m_EditorClassIdentifier: Assembly-CSharp::SkillDefinition
   skillType: 6
-  displayName: 
+  displayName: Block
   maxLevel: 100
   xpPerLevel:
     serializedVersion: 2

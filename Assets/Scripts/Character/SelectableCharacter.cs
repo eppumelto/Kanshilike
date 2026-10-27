@@ -356,9 +356,6 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		}
 		else
 		{
-			if (result.Reaction == CombatReactionType.Block)
-				skillSet?.GainXP(SkillType.Strength, 1f);
-
 			if (result.CounterDamage > 0f)
 				Debug.Log($"[Combat] {characterName}'s attack was countered for {result.CounterDamage:F1} damage.");
 

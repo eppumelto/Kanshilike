@@ -10,7 +10,7 @@ using UnityEngine;
 /// The wrapper ensures AnimalPredatorAI is present on the same GameObject
 /// and coordinates configuration to bridge Wolf-specific fields to the generic base.
 /// </summary>
-public class WolfAI : MonoBehaviour, ICombatActor
+public class WolfAI : MonoBehaviour, ICombatActor, INaturalAttacker
 {
     // ------------------------------------------------------------------ //
     //  Inspector  (preserved for backward compat with existing prefabs)
@@ -21,6 +21,8 @@ public class WolfAI : MonoBehaviour, ICombatActor
     [SerializeField] private CombatFormulaConfig combatFormulaConfig;
     [SerializeField] private bool retaliateWhenAttacked = true;
     [SerializeField, Min(0f)] private float retaliationMemorySeconds = 8f;
+    [Tooltip("Bite attack. Copied to AnimalPredatorAI.")]
+    [SerializeField] private NaturalAttack naturalAttack = NaturalAttack.Wolf;
 
     [Header("Debug")]
     [SerializeField] private bool drawGizmos = true;
@@ -38,6 +40,7 @@ public class WolfAI : MonoBehaviour, ICombatActor
     public bool CanUseEquipment => predatorAI != null && predatorAI.CanUseEquipment;
     public bool CanBlock => predatorAI != null && predatorAI.CanBlock;
     public bool CanCounter => predatorAI != null && predatorAI.CanCounter;
+    public NaturalAttack NaturalAttack => naturalAttack;
 
     // ------------------------------------------------------------------ //
     //  Unity lifecycle
@@ -110,6 +113,12 @@ public class WolfAI : MonoBehaviour, ICombatActor
             retaliationMemoryFieldInfo.SetValue(predatorAI, retaliationMemorySeconds);
         if (gizmosFieldInfo != null)
             gizmosFieldInfo.SetValue(predatorAI, drawGizmos);
+
+        var naturalAttackFieldInfo = typeof(AnimalPredatorAI).GetField(
+            "naturalAttack",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (naturalAttackFieldInfo != null)
+            naturalAttackFieldInfo.SetValue(predatorAI, naturalAttack);
     }
 
     // ------------------------------------------------------------------ //

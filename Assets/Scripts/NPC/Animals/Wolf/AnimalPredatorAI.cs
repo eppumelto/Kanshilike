@@ -14,7 +14,7 @@ using UnityEngine.AI;
 /// Player characters need a SelectableCharacter component.
 /// </summary>
 [RequireComponent(typeof(NavMeshAgent))]
-public class AnimalPredatorAI : MonoBehaviour, ICombatActor
+public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
 {
     // ------------------------------------------------------------------ //
     //  Inspector
@@ -25,6 +25,8 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
     [SerializeField] private CombatFormulaConfig combatFormulaConfig;
     [SerializeField] private bool retaliateWhenAttacked = true;
     [SerializeField, Min(0f)] private float retaliationMemorySeconds = 8f;
+    [Tooltip("Bite/claw attack used instead of the human unarmed values.")]
+    [SerializeField] private NaturalAttack naturalAttack = NaturalAttack.Wolf;
 
     [Header("Debug")]
     [SerializeField] private bool drawGizmos = true;
@@ -66,6 +68,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor
     public bool CanUseEquipment => false;
     public bool CanBlock => personality != null && personality.canBlock;
     public bool CanCounter => personality == null || personality.canCounter;
+    public NaturalAttack NaturalAttack => naturalAttack;
 
     /// <summary>Countdown timer used in the Idle state.</summary>
     private float idleTimer;
