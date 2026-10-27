@@ -9,8 +9,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	public string characterName;
 	public bool isSelected = false;
 
-	private Renderer rend;
-	private Color originalColor;
+	private SelectionRing ring;
 	private NavMeshAgent agent;
 	private CharacterStats stats;
 	private Inventory inventory;
@@ -95,8 +94,6 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 	void Start()
 	{
-		rend = GetComponentInChildren<Renderer>();
-		originalColor = rend.material.color;
 		agent = GetComponent<NavMeshAgent>();
 		stats = GetComponent<CharacterStats>();
 		inventory = GetComponent<Inventory>();
@@ -149,10 +146,25 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		}
 	}
 
+	/// <summary>Ground ring shown when selected (and while a drag-box is over the character).</summary>
+	public SelectionRing Ring
+	{
+		get
+		{
+			if (ring == null)
+			{
+				ring = GetComponent<SelectionRing>();
+				if (ring == null)
+					ring = gameObject.AddComponent<SelectionRing>();
+			}
+			return ring;
+		}
+	}
+
 	public void SetSelected(bool selected)
 	{
 		isSelected = selected;
-		rend.material.color = selected ? Color.green : originalColor;
+		Ring.SetSelected(selected);
 
 		if (selected)
 		{
@@ -199,7 +211,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	{
 		CancelCurrentAction();
 		if (isSelected)
-			SetSelected(false); // restores colour, unbinds the skills panel
+			SetSelected(false); // hides the ring, unbinds the skills panel
+		Ring.SetPreview(false);
 
 		// Gear goes into the bag so the body can be looted.
 		InventoryActions.UnequipAllInto(equipmentManager, inventory);
