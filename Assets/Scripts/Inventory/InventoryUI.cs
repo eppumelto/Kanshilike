@@ -27,7 +27,16 @@ public class InventoryUI : MonoBehaviour
 		if (selectionManager == null)
 			selectionManager = FindFirstObjectByType<SelectionManager>();
 
-		BindContext(inventory, equipment, character);
+		// The Inspector may pre-assign these. Clear them first so BindContext treats this as a
+		// new binding and subscribes to their change events (otherwise it returns early and the
+		// panel never updates for the pre-assigned character).
+		Inventory startInventory = inventory;
+		EquipmentManager startEquipment = equipment;
+		SelectableCharacter startCharacter = character;
+		inventory = null;
+		equipment = null;
+		character = null;
+		BindContext(startInventory, startEquipment, startCharacter);
 
 		if (selectionManager != null)
 		{
@@ -104,23 +113,9 @@ public class InventoryUI : MonoBehaviour
 		if (index < 0) return;
 
 		if (item is EquippableItem equippable)
-		{
 			equipment.Equip(equippable, index);
-		}
-		else if (item is FoodItem food)
-		{
-			character?.Eat(food.nutritionValue);
-			inventory.RemoveItemAt(index);
-		}
-		else if (item is DrinkItem drink)
-		{
-			character?.Drink(drink.hydrationValue);
-			inventory.RemoveItemAt(index);
-		}
-		else
-		{
+		else if (character == null || !character.TryConsumeAt(index))
 			Debug.Log($"No use action defined for {item.itemName}.");
-		}
 
 		ClearSelection();
 	}
@@ -132,12 +127,12 @@ public class InventoryUI : MonoBehaviour
 		if (inventory == null)
 		{
 			for (int i = 0; i < slots.Length; i++)
-				slots[i].Refresh(null, i, null);
+				slots[i].Refresh(null, 0, i, null);
 			return;
 		}
 
 		for (int i = 0; i < slots.Length; i++)
-			slots[i].Refresh(inventory.GetItemAt(i), i, equipment);
+			slots[i].Refresh(inventory.GetItemAt(i), inventory.GetCountAt(i), i, equipment);
 	}
 
 	public void ToggleForCharacter(SelectableCharacter targetCharacter)
@@ -160,6 +155,7 @@ public class InventoryUI : MonoBehaviour
 			return;
 
 		BindToCharacter(targetCharacter);
+		RefreshAll();
 		gameObject.SetActive(true);
 	}
 

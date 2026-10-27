@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 {
 	[SerializeField] private Image iconImage;
 	[SerializeField] private Image slotBackground;
+	[Tooltip("Shows the stack size. Created automatically in the bottom-right corner if left empty.")]
+	[SerializeField] private TMP_Text countText;
 
 	[Header("Colors")]
 	[SerializeField] private Color normalColor = Color.white;
@@ -18,8 +21,11 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 	public System.Action<InventorySlotUI> OnClicked;
 	public Item CurrentItem => currentItem;
 
-	public void Refresh(Item item, int index, EquipmentManager equipmentManager)
+	public void Refresh(Item item, int count, int index, EquipmentManager equipmentManager)
 	{
+		if (countText == null)
+			countText = CreateCountText();
+
 		currentItem = item;
 		slotIndex = index;
 		equipment = equipmentManager;
@@ -39,6 +45,9 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 			iconImage.color = Color.clear;
 		}
 
+		if (countText != null)
+			countText.text = displayItem != null && count > 1 ? count.ToString() : string.Empty;
+
 		if (slotBackground != null)
 			slotBackground.color = normalColor;
 	}
@@ -55,5 +64,27 @@ public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 		if (currentItem == null) return;
 		if (equipment != null && equipment.IsInventorySlotEquipped(slotIndex)) return;
 		OnClicked?.Invoke(this);
+	}
+
+	private TMP_Text CreateCountText()
+	{
+		var go = new GameObject("Count", typeof(RectTransform));
+		go.transform.SetParent(transform, false);
+
+		var rect = (RectTransform)go.transform;
+		rect.anchorMin = Vector2.zero;
+		rect.anchorMax = Vector2.one;
+		rect.offsetMin = new Vector2(4f, 2f);
+		rect.offsetMax = new Vector2(-4f, -2f);
+
+		var text = go.AddComponent<TextMeshProUGUI>();
+		text.alignment = TextAlignmentOptions.BottomRight;
+		text.fontSize = 18f;
+		text.fontStyle = FontStyles.Bold;
+		text.color = Color.white;
+		text.outlineWidth = 0.2f;
+		text.outlineColor = Color.black;
+		text.raycastTarget = false; // clicks go to the slot
+		return text;
 	}
 }

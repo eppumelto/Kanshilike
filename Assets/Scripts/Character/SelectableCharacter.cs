@@ -40,6 +40,14 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	[SerializeField] private bool canBlock = true;
 	[SerializeField] private bool canCounter = true;
 
+	[Header("Auto Eat / Drink")]
+	[Tooltip("Eats food from the inventory whenever hunger drops below this (0-100). 0 = never.")]
+	[SerializeField, Range(0f, 100f)] private float autoEatBelow = 40f;
+	[Tooltip("Drinks from the inventory whenever thirst drops below this (0-100). 0 = never.")]
+	[SerializeField, Range(0f, 100f)] private float autoDrinkBelow = 40f;
+	private const float AutoConsumeCheckSeconds = 1f;
+	private float nextAutoConsumeCheck;
+
 	public Transform ActorTransform => transform;
 	public CharacterStats Stats => stats;
 	public SkillSet Skills => skillSet;
@@ -80,6 +88,12 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		{
 			skillSet?.GainXP(SkillType.Athletics, moved * AthleticsXPPerUnit);
 			lastPosition = transform.position;
+		}
+
+		if (IsAlive && Time.time >= nextAutoConsumeCheck)
+		{
+			nextAutoConsumeCheck = Time.time + AutoConsumeCheckSeconds;
+			AutoConsume();
 		}
 
 		if (isSelected)
@@ -398,16 +412,80 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		reservedTargetSlot.Release(gameObject);
 	}
 
-	public void collectItem(Item item, float harvestXP = 15f)
+	/// <summary>Puts the item in this character's inventory. Returns false if it did not fit.</summary>
+	public bool collectItem(Item item, float harvestXP = 15f)
 	{
 		if (item == null)
 		{
 			Debug.LogWarning($"{characterName} tried to collect an item, but no Item asset is assigned.");
-			return;
+			return false;
 		}
-		Debug.Log($"{characterName} is collecting {item.itemName}");
-		inventory?.AddItem(item);
+
+		if (inventory == null || !inventory.AddItem(item))
+		{
+			ShowFloatingText("Inventory full", 2f);
+			return false;
+		}
+
+		Debug.Log($"{characterName} collected {item.itemName}");
 		skillSet?.GainXP(SkillType.Harvesting, harvestXP);
+		return true;
+	}
+
+	/// <summary>
+	/// Eats or drinks one item from the given inventory slot. Returns false if the slot
+	/// holds nothing consumable.
+	/// </summary>
+	public bool TryConsumeAt(int index)
+	{
+		if (inventory == null || !IsAlive)
+			return false;
+
+		Item item = inventory.GetItemAt(index);
+		if (item is FoodItem food)
+			Eat(food.nutritionValue);
+		else if (item is DrinkItem drink)
+			Drink(drink.hydrationValue);
+		else
+			return false;
+
+		inventory.RemoveOneAt(index);
+		return true;
+	}
+
+	// Kenshi-style: characters feed themselves from their own inventory when they get hungry
+	// or thirsty, one item per check, until they are above the threshold or run out.
+	private void AutoConsume()
+	{
+		if (inventory == null || stats == null || !stats.hasNeeds)
+			return;
+
+		if (stats.hunger < autoEatBelow)
+		{
+			int food = inventory.FindFirst<FoodItem>();
+			if (food >= 0)
+				TryConsumeAt(food);
+		}
+
+		if (stats.thirst < autoDrinkBelow)
+		{
+			int drink = inventory.FindFirst<DrinkItem>();
+			if (drink >= 0)
+				TryConsumeAt(drink);
+		}
+	}
+
+	private void ShowFloatingText(string text, float seconds)
+	{
+		if (harvestingLabelPrefab == null)
+			return;
+
+		GameObject label = Instantiate(harvestingLabelPrefab);
+		label.transform.SetParent(transform);
+		var labelText = label.GetComponent<HarvestingLabel>();
+		if (labelText != null)
+			labelText.SetText(text);
+		Destroy(label, seconds);
 	}
 
 }

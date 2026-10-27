@@ -11,4 +11,7 @@ public abstract class Item : ScriptableObject
 
 	[TextArea]
 	public string description;
+
+	[Tooltip("How many of this item fit in one inventory slot. 1 = does not stack.")]
+	[Min(1)] public int maxStack = 1;
 }

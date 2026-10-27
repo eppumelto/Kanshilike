@@ -15,4 +15,5 @@ MonoBehaviour:
   itemName: Blueberries
   icon: {fileID: 21300000, guid: c89ac9a252b12f34c83ef9f03c37ea2a, type: 3}
   description: 
+  maxStack: 20
   nutritionValue: 20

@@ -4,41 +4,94 @@ public class Inventory : MonoBehaviour
 {
 	public const int SlotCount = 12;
 
-	public Item[] slots = new Item[SlotCount];
+	[System.Serializable]
+	public struct Stack
+	{
+		public Item item;
+		[Min(0)] public int count;
+
+		public bool IsEmpty => item == null || count <= 0;
+	}
+
+	[SerializeField] private Stack[] slots = new Stack[SlotCount];
 
 	public event System.Action OnInventoryChanged;
 
 	/// <summary>
-	/// Adds an item to the first empty slot. Returns true on success, false if inventory is full.
+	/// Adds one item, topping up an existing stack first, then the first empty slot.
+	/// Returns false (and changes nothing) if there is no room.
 	/// </summary>
 	public bool AddItem(Item item)
 	{
-		for (int i = 0; i < SlotCount; i++)
+		if (item == null)
+			return false;
+
+		int index = FindSlotFor(item);
+		if (index < 0)
 		{
-			if (slots[i] == null)
-			{
-				slots[i] = item;
-				Debug.Log($"Added '{item.itemName}' to inventory slot {i}.");
-				OnInventoryChanged?.Invoke();
-				return true;
-			}
+			Debug.Log($"Inventory is full, no room for '{item.itemName}'.");
+			return false;
 		}
-		Debug.Log("Inventory is full!");
-		return false;
+
+		slots[index].item = item;
+		slots[index].count++;
+		Debug.Log($"Added '{item.itemName}' to inventory slot {index} ({slots[index].count}).");
+		OnInventoryChanged?.Invoke();
+		return true;
 	}
 
-	public Item GetItemAt(int index) => slots[index];
+	/// <summary>True if one more of this item would fit.</summary>
+	public bool CanAdd(Item item) => item != null && FindSlotFor(item) >= 0;
+
+	public Item GetItemAt(int index) => slots[index].IsEmpty ? null : slots[index].item;
+
+	public int GetCountAt(int index) => slots[index].IsEmpty ? 0 : slots[index].count;
 
 	public bool IsFull()
 	{
 		for (int i = 0; i < SlotCount; i++)
-			if (slots[i] == null) return false;
+			if (slots[i].IsEmpty) return false;
 		return true;
 	}
 
-	public void RemoveItemAt(int index)
+	/// <summary>Removes one item from the slot, clearing it when the stack runs out.</summary>
+	public void RemoveOneAt(int index)
 	{
-		slots[index] = null;
+		if (slots[index].IsEmpty)
+			return;
+
+		slots[index].count--;
+		if (slots[index].count <= 0)
+			slots[index] = default;
+
 		OnInventoryChanged?.Invoke();
+	}
+
+	/// <summary>Index of the first slot holding an item of type T, or -1.</summary>
+	public int FindFirst<T>() where T : Item
+	{
+		for (int i = 0; i < SlotCount; i++)
+			if (!slots[i].IsEmpty && slots[i].item is T)
+				return i;
+		return -1;
+	}
+
+	private int FindSlotFor(Item item)
+	{
+		for (int i = 0; i < SlotCount; i++)
+			if (!slots[i].IsEmpty && slots[i].item == item && slots[i].count < item.maxStack)
+				return i;
+
+		for (int i = 0; i < SlotCount; i++)
+			if (slots[i].IsEmpty)
+				return i;
+
+		return -1;
+	}
+
+	private void OnValidate()
+	{
+		if (slots == null || slots.Length != SlotCount)
+			System.Array.Resize(ref slots, SlotCount);
 	}
 }

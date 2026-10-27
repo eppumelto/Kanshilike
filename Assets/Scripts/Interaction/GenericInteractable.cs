@@ -112,7 +112,8 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 				interactor.Sleep();
 				break;
 			case InteractionActionType.Collect:
-				interactor.collectItem(entry.item);
+				if (!interactor.collectItem(entry.item))
+					return; // no room: leave the object where it is
 				consumed = true;
 				Destroy(gameObject);
 				return; // object destroyed, skip use decrement
@@ -120,7 +121,8 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 				interactor.Attack(this);
 				break;
 			case InteractionActionType.Harvest:
-				interactor.collectItem(entry.item);
+				if (!interactor.collectItem(entry.item))
+					return; // no room: the harvest charge is not used up
 				if (entry.maxUses > 0)
 				{
 					entry.usesRemaining--;
