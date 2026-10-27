@@ -15,6 +15,9 @@ MonoBehaviour:
   itemName: Spear
   icon: {fileID: 21300000, guid: 788b2dda329874c4c81eefede16ba81f, type: 3}
   description: 
+  maxStack: 1
+  size: {x: 1, y: 5}
+  weight: 3
   equipSlot: 0
   equippedPrefab: {fileID: 0}
   weaponPrefab: {fileID: 901326324060759920, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}

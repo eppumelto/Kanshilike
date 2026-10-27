@@ -48,6 +48,39 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private const float AutoConsumeCheckSeconds = 1f;
 	private float nextAutoConsumeCheck;
 
+	[Header("Carrying")]
+	[Tooltip("Kilograms an untrained character carries before slowing down badly. Strength raises it (x2 at master level).")]
+	[SerializeField, Min(1f)] private float baseCarryCapacity = 30f;
+	// Strength XP per unit walked under a heavy load (scaled by how heavy).
+	private const float StrengthXPPerUnit = 0.1f;
+	private float baseMoveSpeed;
+
+	/// <summary>Kilograms in the inventory plus everything equipped.</summary>
+	public float CarryWeight =>
+		(inventory != null ? inventory.TotalWeight : 0f) + (equipmentManager != null ? equipmentManager.TotalWeight : 0f);
+
+	public float CarryCapacity => baseCarryCapacity * (skillSet != null ? skillSet.GetBonus(SkillType.Strength) : 1f);
+
+	/// <summary>Carried weight as a fraction of capacity: 0.5 is where it starts to slow you, 1 is full.</summary>
+	public float Encumbrance => CarryWeight / Mathf.Max(1f, CarryCapacity);
+
+	public string EncumbranceLabel => Encumbrance switch
+	{
+		<= 0.5f => "Light",
+		<= 1f => "Heavy",
+		<= 1.5f => "Overloaded",
+		_ => "Crushed"
+	};
+
+	/// <summary>Movement speed factor: full speed up to half capacity, 80% at capacity, a crawl when overloaded.</summary>
+	public static float SpeedMultiplierFor(float encumbrance)
+	{
+		if (encumbrance <= 0.5f) return 1f;
+		if (encumbrance <= 1f) return Mathf.Lerp(1f, 0.8f, (encumbrance - 0.5f) / 0.5f);
+		if (encumbrance <= 1.5f) return Mathf.Lerp(0.8f, 0.4f, (encumbrance - 1f) / 0.5f);
+		return 0.25f;
+	}
+
 	public Transform ActorTransform => transform;
 	public CharacterStats Stats => stats;
 	public SkillSet Skills => skillSet;
@@ -70,6 +103,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		skillSet = GetComponent<SkillSet>();
 		equipmentManager = GetComponent<EquipmentManager>();
 		lastPosition = transform.position;
+		if (agent != null)
+			baseMoveSpeed = agent.speed;
 
 		if (stats != null)
 			stats.OnDied += HandleDied;
@@ -84,11 +119,20 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	{
 		// Athletics: grant XP proportional to distance walked
 		float moved = Vector3.Distance(transform.position, lastPosition);
+		float encumbrance = Encumbrance;
 		if (moved > 0.01f)
 		{
 			skillSet?.GainXP(SkillType.Athletics, moved * AthleticsXPPerUnit);
+
+			// Kenshi-style: hauling a heavy load trains Strength.
+			if (encumbrance > 0.5f)
+				skillSet?.GainXP(SkillType.Strength, moved * StrengthXPPerUnit * Mathf.Min(2f, (encumbrance - 0.5f) * 2f));
+
 			lastPosition = transform.position;
 		}
+
+		if (agent != null && agent.enabled && baseMoveSpeed > 0f)
+			agent.speed = baseMoveSpeed * SpeedMultiplierFor(encumbrance);
 
 		if (IsAlive && Time.time >= nextAutoConsumeCheck)
 		{
@@ -156,6 +200,9 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		CancelCurrentAction();
 		if (isSelected)
 			SetSelected(false); // restores colour, unbinds the skills panel
+
+		// Gear goes into the bag so the body can be looted.
+		InventoryActions.UnequipAllInto(equipmentManager, inventory);
 	}
 
 	private void CancelCurrentAction()
@@ -433,28 +480,34 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	}
 
 	/// <summary>
-	/// Eats or drinks one item from the given inventory slot. Returns false if the slot
-	/// holds nothing consumable.
+	/// Eats or drinks one item from a stack in this character's inventory. Returns false if
+	/// it holds nothing consumable.
 	/// </summary>
-	public bool TryConsumeAt(int index)
+	public bool TryConsume(Inventory.Entry entry)
 	{
-		if (inventory == null || !IsAlive)
+		if (inventory == null || !IsAlive || !inventory.Contains(entry))
 			return false;
 
-		Item item = inventory.GetItemAt(index);
-		if (item is FoodItem food)
+		if (entry.item is FoodItem food)
 		{
 			Eat(food.nutritionValue);
-			inventory.RemoveOneAt(index);
+			inventory.RemoveOne(entry);
 		}
-		else if (item is DrinkItem drink)
+		else if (entry.item is DrinkItem drink)
 		{
 			Drink(drink.hydrationValue);
-			inventory.RemoveOneAt(index);
+			Vector2Int pos = entry.position;
+			bool rotated = entry.rotated;
+			bool lastOne = entry.count == 1;
+			inventory.RemoveOne(entry);
 
-			// Keep the empty container (waterskin) so it can be refilled at a well.
-			if (drink.emptyContainer != null && !inventory.AddItem(drink.emptyContainer))
-				ShowFloatingText($"No room, dropped {drink.emptyContainer.itemName}", 2f);
+			// Keep the empty container (waterskin) so it can be refilled at a well,
+			// in the same spot when that was the last one of the stack.
+			Item empty = drink.emptyContainer;
+			if (empty != null
+				&& !(lastOne && inventory.Place(empty, 1, pos, rotated))
+				&& !inventory.AddItem(empty))
+				ShowFloatingText($"No room, dropped {empty.itemName}", 2f);
 		}
 		else
 			return false;
@@ -483,16 +536,16 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 		if (stats.hunger < autoEatBelow)
 		{
-			int food = inventory.FindFirst<FoodItem>();
-			if (food >= 0)
-				TryConsumeAt(food);
+			var food = inventory.FindFirst<FoodItem>();
+			if (food != null)
+				TryConsume(food);
 		}
 
 		if (stats.thirst < autoDrinkBelow)
 		{
-			int drink = inventory.FindFirst<DrinkItem>();
-			if (drink >= 0)
-				TryConsumeAt(drink);
+			var drink = inventory.FindFirst<DrinkItem>();
+			if (drink != null)
+				TryConsume(drink);
 		}
 	}
 

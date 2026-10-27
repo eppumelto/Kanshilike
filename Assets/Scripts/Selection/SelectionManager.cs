@@ -1,23 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class SelectionManager : MonoBehaviour
 {
 	public Camera mainCamera;
 	public List<SelectableCharacter> selectedCharacters = new List<SelectableCharacter>();
-	[SerializeField] private InventoryUI inventoryUI;
 
 	public System.Action<IReadOnlyList<SelectableCharacter>> OnSelectionChanged;
 	public SelectableCharacter PrimarySelected => selectedCharacters.Count > 0 ? selectedCharacters[0] : null;
 
 	private Vector2 dragStartPos;
 	private bool isDragging = false;
-
-	private void Start()
-	{
-		if (inventoryUI == null)
-			inventoryUI = FindFirstObjectByType<InventoryUI>(FindObjectsInactive.Include);
-	}
 
 	void Update()
 	{
@@ -26,15 +20,18 @@ public class SelectionManager : MonoBehaviour
 			NotifySelectionChanged();
 
 		if (Input.GetKeyDown(KeyCode.I))
-			inventoryUI?.ToggleForCharacter(PrimarySelected);
+			InventoryScreen.Instance.Toggle(selectedCharacters);
 
 		HandleMouseInput();
 	}
 
+	// Clicks on inventory windows or other UI must not also select or command in the world.
+	private static bool PointerOverUI => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
 	void HandleMouseInput()
 	{
 		// Left mouse button pressed
-		if (Input.GetMouseButtonDown(0))
+		if (Input.GetMouseButtonDown(0) && !PointerOverUI)
 		{
 			dragStartPos = Input.mousePosition;
 			isDragging = true;
@@ -60,14 +57,16 @@ public class SelectionManager : MonoBehaviour
 		}
 
 		// Right-click to interact or move
-		if (Input.GetMouseButtonDown(1))
+		if (Input.GetMouseButtonDown(1) && !PointerOverUI)
 		{
 			if (selectedCharacters.Count == 0) return;
 
 			Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 			if (Physics.Raycast(ray, out RaycastHit hit))
 			{
-				var interactable = hit.collider.GetComponentInParent<IInteractable>();
+				// A body's own interactions (loot) win over whatever it had while alive.
+				Corpse corpse = hit.collider.GetComponentInParent<Corpse>();
+				IInteractable interactable = corpse != null ? corpse : hit.collider.GetComponentInParent<IInteractable>();
 				var options = interactable?.GetAvailableInteractions(selectedCharacters[0]);
 
 				if (options != null && options.Count > 0)
@@ -76,8 +75,12 @@ public class SelectionManager : MonoBehaviour
 					string chosenAction = options[0].id;
 					Debug.Log($"Interacting with {interactable.GetName()} using '{options[0].displayName}'");
 
-					foreach (var c in selectedCharacters)
-						c.InteractWith(interactable, chosenAction);
+					// One looter is enough; everything else is done by the whole selection.
+					if (corpse != null)
+						selectedCharacters[0].InteractWith(interactable, chosenAction);
+					else
+						foreach (var c in selectedCharacters)
+							c.InteractWith(interactable, chosenAction);
 				}
 				else
 				{

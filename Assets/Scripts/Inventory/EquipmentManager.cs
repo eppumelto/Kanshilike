@@ -3,6 +3,10 @@ using UnityEngine;
 
 public enum EquipSlot { Hand, Shield, Helmet, Chest, Legs, Shoes, Gloves }
 
+/// <summary>
+/// What a character is wearing and wielding. Equipped items are held here, not in the
+/// inventory grid (Kenshi-style): moving them between the two is InventoryActions' job.
+/// </summary>
 public class EquipmentManager : MonoBehaviour
 {
 	[System.Serializable]
@@ -17,7 +21,6 @@ public class EquipmentManager : MonoBehaviour
 	private class EquipEntry
 	{
 		public EquippableItem item;
-		public int inventoryIndex;
 		public GameObject instance;
 	}
 
@@ -25,12 +28,30 @@ public class EquipmentManager : MonoBehaviour
 
 	public event System.Action OnEquipChanged;
 
-	public void Equip(EquippableItem item, int inventoryIndex)
+	public static readonly EquipSlot[] AllSlots = (EquipSlot[])System.Enum.GetValues(typeof(EquipSlot));
+
+	public float TotalWeight
 	{
-		if (item == null) return;
+		get
+		{
+			float total = 0f;
+			foreach (var e in equipped.Values)
+				total += e.item.weight;
+			return total;
+		}
+	}
+
+	/// <summary>
+	/// Puts the item in its slot and returns whatever was there before (or null).
+	/// The caller is responsible for where the returned item goes.
+	/// </summary>
+	public EquippableItem Equip(EquippableItem item)
+	{
+		if (item == null)
+			return null;
 
 		EquipSlot slot = item.equipSlot;
-		Unequip(slot);
+		EquippableItem previous = Unequip(slot);
 
 		Transform socket = GetSocket(slot);
 		GameObject instance = null;
@@ -43,39 +64,28 @@ public class EquipmentManager : MonoBehaviour
 			instance.transform.localScale = Vector3.one;
 		}
 
-		equipped[slot] = new EquipEntry { item = item, inventoryIndex = inventoryIndex, instance = instance };
-		Debug.Log($"Equipped {item.itemName} in {slot} slot.");
+		equipped[slot] = new EquipEntry { item = item, instance = instance };
 		OnEquipChanged?.Invoke();
+		return previous;
 	}
 
-	public void Unequip(EquipSlot slot)
+	/// <summary>Empties the slot and returns the item that was in it (or null).</summary>
+	public EquippableItem Unequip(EquipSlot slot)
 	{
-		if (!equipped.TryGetValue(slot, out var entry)) return;
+		if (!equipped.TryGetValue(slot, out var entry))
+			return null;
 
 		if (entry.instance != null)
 			Destroy(entry.instance);
 
-		Debug.Log($"Unequipped {entry.item.itemName} from {slot} slot.");
 		equipped.Remove(slot);
 		OnEquipChanged?.Invoke();
+		return entry.item;
 	}
 
 	public EquippableItem GetEquipped(EquipSlot slot)
 	{
 		return equipped.TryGetValue(slot, out var entry) ? entry.item : null;
-	}
-
-	public int GetEquippedInventoryIndex(EquipSlot slot)
-	{
-		return equipped.TryGetValue(slot, out var entry) ? entry.inventoryIndex : -1;
-	}
-
-	/// <summary>Returns true if the given inventory slot index is currently equipped in any slot.</summary>
-	public bool IsInventorySlotEquipped(int inventoryIndex)
-	{
-		foreach (var entry in equipped.Values)
-			if (entry.inventoryIndex == inventoryIndex) return true;
-		return false;
 	}
 
 	private Transform GetSocket(EquipSlot slot)

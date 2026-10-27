@@ -15,8 +15,13 @@ MonoBehaviour:
   itemName: Axe
   icon: {fileID: 21300000, guid: 864f078edbf8a2543a4d3069617f4d67, type: 3}
   description: 
+  maxStack: 1
+  size: {x: 2, y: 3}
+  weight: 2.5
   equipSlot: 0
   equippedPrefab: {fileID: 0}
   weaponPrefab: {fileID: 8800066851433734843, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
   weaponSkill: 1
   damage: 10
+  attackRange: 1.5
+  attackSpeedMultiplier: 1
