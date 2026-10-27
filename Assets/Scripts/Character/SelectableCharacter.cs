@@ -63,6 +63,9 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		equipmentManager = GetComponent<EquipmentManager>();
 		lastPosition = transform.position;
 
+		if (stats != null)
+			stats.OnDied += HandleDied;
+
 		// Initialize sliders
 		hungerSlider.maxValue = 100f;
 		thirstSlider.maxValue = 100f;
@@ -132,7 +135,14 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			StartCoroutine(MoveAndPerform(target, actionId));
 	}
 
-	private bool IsAlive => stats == null || stats.IsAlive;
+	public bool IsAlive => stats == null || stats.IsAlive;
+
+	private void HandleDied(GameObject killer)
+	{
+		CancelCurrentAction();
+		if (isSelected)
+			SetSelected(false); // restores colour, unbinds the skills panel
+	}
 
 	private void CancelCurrentAction()
 	{
@@ -375,6 +385,12 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private void OnDisable()
 	{
 		CancelCurrentAction();
+	}
+
+	private void OnDestroy()
+	{
+		if (stats != null)
+			stats.OnDied -= HandleDied;
 	}
 
 	private void ReleaseReservedSlot()

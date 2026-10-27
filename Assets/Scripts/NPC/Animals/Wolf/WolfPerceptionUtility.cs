@@ -28,7 +28,7 @@ public static class WolfPerceptionUtility
         Collider[] nearby = Physics.OverlapSphere(self.position, personality.detectionRange, personality.detectionMask);
         foreach (Collider col in nearby)
         {
-            if (!col.TryGetComponent<SelectableCharacter>(out _))
+            if (!col.TryGetComponent<SelectableCharacter>(out var candidate) || !candidate.IsAlive)
                 continue;
 
             Vector3 dirToTarget = col.transform.position - self.position;

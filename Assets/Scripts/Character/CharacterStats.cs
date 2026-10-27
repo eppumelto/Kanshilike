@@ -53,6 +53,9 @@ public class CharacterStats : MonoBehaviour
 
 	void UpdateStats(float currentHour)
 	{
+		if (!IsAlive)
+			return;
+
 		float hungerRate = hungerLossRate;
 		float thirstRate = thirstLossRate;
 		float tiredRate = tirednessGainRate;
@@ -96,7 +99,12 @@ public class CharacterStats : MonoBehaviour
 		if (!IsAlive)
 		{
 			Debug.Log($"{name} died.");
+			StopAllCoroutines(); // e.g. sleeping
 			OnDied?.Invoke(source);
+
+			// After the OnDied listeners, so they can still use the NavMeshAgent etc.
+			if (Application.isPlaying && GetComponent<Corpse>() == null)
+				gameObject.AddComponent<Corpse>();
 		}
 	}
 

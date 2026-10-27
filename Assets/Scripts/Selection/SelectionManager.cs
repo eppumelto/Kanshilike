@@ -21,6 +21,10 @@ public class SelectionManager : MonoBehaviour
 
 	void Update()
 	{
+		// Characters that died since last frame drop out of the selection.
+		if (selectedCharacters.RemoveAll(c => c == null || !c.IsAlive) > 0)
+			NotifySelectionChanged();
+
 		if (Input.GetKeyDown(KeyCode.I))
 			inventoryUI?.ToggleForCharacter(PrimarySelected);
 
@@ -64,23 +68,20 @@ public class SelectionManager : MonoBehaviour
 			if (Physics.Raycast(ray, out RaycastHit hit))
 			{
 				var interactable = hit.collider.GetComponentInParent<IInteractable>();
+				var options = interactable?.GetAvailableInteractions(selectedCharacters[0]);
 
-				if (interactable != null)
+				if (options != null && options.Count > 0)
 				{
-					var options = interactable.GetAvailableInteractions(selectedCharacters[0]);
-					if (options.Count > 0)
-					{
-						// For now, auto-pick the first action
-						string chosenAction = options[0].id;
-						Debug.Log($"Interacting with {interactable.GetName()} using '{options[0].displayName}'");
+					// For now, auto-pick the first action
+					string chosenAction = options[0].id;
+					Debug.Log($"Interacting with {interactable.GetName()} using '{options[0].displayName}'");
 
-						foreach (var c in selectedCharacters)
-							c.InteractWith(interactable, chosenAction);
-					}
+					foreach (var c in selectedCharacters)
+						c.InteractWith(interactable, chosenAction);
 				}
 				else
 				{
-					// Move
+					// Plain ground, or something with nothing to do (e.g. a corpse): just walk there.
 					foreach (var c in selectedCharacters)
 						c.CommandMove(hit.point);
 				}
@@ -97,6 +98,9 @@ public class SelectionManager : MonoBehaviour
 		if (Physics.Raycast(ray, out RaycastHit hit))
 		{
 			SelectableCharacter character = hit.collider.GetComponentInParent<SelectableCharacter>();
+			if (character != null && !character.IsAlive)
+				character = null; // clicking a body counts as clicking empty ground
+
 			if (character != null)
 			{
 				if (selectedCharacters.Contains(character))
@@ -141,6 +145,9 @@ public class SelectionManager : MonoBehaviour
 
 		foreach (var character in allCharacters)
 		{
+			if (!character.IsAlive)
+				continue;
+
 			Vector3 screenPos = mainCamera.WorldToScreenPoint(character.transform.position);
 
 			if (screenPos.z < 0) continue;
