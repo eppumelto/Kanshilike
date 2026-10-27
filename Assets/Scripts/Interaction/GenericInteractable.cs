@@ -31,6 +31,9 @@ public class InteractionEntry
 	[Tooltip("Item added to inventory when actionType is Collect or Harvest.")]
 	public Item item;
 
+	[Tooltip("Drink only: also refills the drinker's empty containers of this drink (e.g. a well filling empty waterskins).")]
+	public DrinkItem refills;
+
 	[Tooltip("How many seconds the Harvest action takes (before skill speed multipliers are applied).")]
 	public float harvestDuration = 3f;
 
@@ -104,6 +107,8 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 		{
 			case InteractionActionType.Drink:
 				interactor.Drink(entry.value);
+				if (entry.refills != null)
+					interactor.RefillContainers(entry.refills);
 				break;
 			case InteractionActionType.Eat:
 				interactor.Eat(entry.value);

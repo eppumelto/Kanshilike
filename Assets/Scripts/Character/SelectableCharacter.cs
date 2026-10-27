@@ -443,14 +443,35 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 		Item item = inventory.GetItemAt(index);
 		if (item is FoodItem food)
+		{
 			Eat(food.nutritionValue);
+			inventory.RemoveOneAt(index);
+		}
 		else if (item is DrinkItem drink)
+		{
 			Drink(drink.hydrationValue);
+			inventory.RemoveOneAt(index);
+
+			// Keep the empty container (waterskin) so it can be refilled at a well.
+			if (drink.emptyContainer != null && !inventory.AddItem(drink.emptyContainer))
+				ShowFloatingText($"No room, dropped {drink.emptyContainer.itemName}", 2f);
+		}
 		else
 			return false;
 
-		inventory.RemoveOneAt(index);
 		return true;
+	}
+
+	/// <summary>Refills every empty container this drink comes in (e.g. empty waterskins). Returns how many.</summary>
+	public int RefillContainers(DrinkItem drink)
+	{
+		if (inventory == null || drink == null || drink.emptyContainer == null)
+			return 0;
+
+		int filled = inventory.ReplaceAll(drink.emptyContainer, drink);
+		if (filled > 0)
+			ShowFloatingText($"Filled {filled} {drink.itemName}", 2f);
+		return filled;
 	}
 
 	// Kenshi-style: characters feed themselves from their own inventory when they get hungry

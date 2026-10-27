@@ -67,6 +67,30 @@ public class Inventory : MonoBehaviour
 		OnInventoryChanged?.Invoke();
 	}
 
+	/// <summary>
+	/// Turns every stack of <paramref name="from"/> into <paramref name="to"/>, keeping the counts
+	/// (e.g. empty waterskins into full ones). Returns how many items changed.
+	/// </summary>
+	public int ReplaceAll(Item from, Item to)
+	{
+		if (from == null || to == null)
+			return 0;
+
+		int changed = 0;
+		for (int i = 0; i < SlotCount; i++)
+		{
+			if (slots[i].IsEmpty || slots[i].item != from)
+				continue;
+
+			slots[i].item = to;
+			changed += slots[i].count;
+		}
+
+		if (changed > 0)
+			OnInventoryChanged?.Invoke();
+		return changed;
+	}
+
 	/// <summary>Index of the first slot holding an item of type T, or -1.</summary>
 	public int FindFirst<T>() where T : Item
 	{
