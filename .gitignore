@@ -43,6 +43,7 @@ ExportedObj/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.tmp
 *.user
@@ -97,3 +98,16 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# --- Project additions ---
+
+# JetBrains Rider project folder
+.idea/
+
+# OS clutter
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Personal Claude Code settings (shared settings and .claude/skills stay tracked)
+.claude/settings.local.json
