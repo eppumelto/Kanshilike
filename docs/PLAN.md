@@ -10,7 +10,6 @@ lakes, rivers, bogs and long, cold winters. Small farmsteads and hill forts, fur
 trade, iron smelted from bog ore. Wildlife: wolves, bears, elk, lynx.
 
 Use the setting for flavour and for item and building choices, for example:
-- fire made with flint, steel and tinder fungus (*taula*); pine resin and birch bark as kindling
 - shelters such as a lean-to (*laavu*) and a hut or tent (*kota*); a sauna as a late-game base building
 - furs and wool for warmth; iron axes, spears and round shields; dried fish and meat
 - Finnish place and character names
@@ -81,12 +80,14 @@ watch so sleepers are woken when something approaches.
 The core of life on the road. One fire covers warmth, cooking, rest and safety
 (design pillar 4).
 
-*Design note:* select a character, choose "Build campfire", place it on the
-ground. It costs wood (gathered with Harvest) and needs fire-making kit (flint,
-steel and *taula* tinder). The fire burns for a set number of hours and can be fed
-more wood. Keep it to a few clicks: no separate kindling or tinder stages.
-- [ ] Wood item from harvesting trees or deadwood; fire-making kit item
-- [ ] Build mode: place a campfire prefab on valid ground, consuming the materials
+*Design note:* three steps, nothing more: **craft** a campfire from wood, **place**
+it on the ground, **click to light** it. No fire-starting tools, kindling or
+tinder; lighting always works. The fire burns for a set number of hours and can
+be fed more wood.
+- [ ] Wood item from harvesting trees or deadwood
+- [ ] Craft a campfire item from wood (first crafting recipe)
+- [ ] Place mode: put the campfire down on valid ground
+- [ ] "Light" interaction: one click lights it
 - [ ] Campfire burns down over in-game hours; "Add wood" interaction; light radius at night
 - [ ] Campfire is a heat source (item 5), a cooking station (item 7) and a safe-rest spot (item 3)
 
