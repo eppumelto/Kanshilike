@@ -18,6 +18,10 @@ are in `docs/PLAN.md`; check new mechanics against them.
 
 **The roadmap and current work live in [`docs/PLAN.md`](docs/PLAN.md).**
 
+**Current focus: the vertical slice demo** (see "Current milestone" in the plan).
+Build only what the demo needs; full-game features wait until the demo has been
+play-tested.
+
 - At the start of a session, read `docs/PLAN.md` to see what is done and what is next.
 - When you finish an item, tick it off (`- [x]`) in the same commit as the code change.
 - When a new idea or bug comes up, add it to the plan instead of keeping it only in chat.

@@ -48,9 +48,63 @@ a source of flavour, not a rule to follow everywhere. Check every new mechanic a
 - [x] Interactions: Drink, Eat, Sleep, Collect, Harvest, Attack
 - [x] Every wolf attack logged to the Unity Console
 
+## Current milestone: vertical slice demo
+
+**Goal:** a small, playable demo that answers one question: **is the feud idea
+fun?** Everything below this section is the full game and comes later. Only
+build what the demo needs, and keep the rest out until the demo has been played
+and judged.
+
+*Design note:* the demo is the smith's daughter quest (see "Feuds as the driving
+force") from start to finish in a tiny world. Two approaches are enough to test
+the idea: **force** and **stealth**. The demo runs as one play session, so the
+world only has to remember deeds while the game is running: **no save system
+needed yet**.
+
+### Scope
+
+| In the demo | Kept out (later) |
+|---|---|
+| 2 villages: the smith's home village and the raiders' village | More villages, a world map, settlements growing |
+| About 6 named families split between the villages, some with relatives in both | Large family trees, marriages |
+| One playable tribe (e.g. Hämäläinen) plus the raiders' tribe | Tribe choice, all five tribes, traders |
+| Human NPCs: villagers and guards who walk, fight and sleep | Daily routines, jobs, trade |
+| The quest: the smith asks for help, the daughter is held, return her | A quest system with many jobs |
+| **Force:** recruit a band of villagers and attack | Pillaging, burning buildings |
+| **Stealth:** at night, crouched, outside guards' view cones | Full stealth system |
+| Deed log in memory: killed, helped, freed | Many deed types, saving |
+| Relation scores with reasons shown in a simple UI | Full relation UI, score bands for every behaviour |
+| **One revenge party** from a family the player wronged | Ongoing feuds, blood money, settling feuds |
+| Survival kept as it is now, plus healing and campfire resting | Warmth, cooking, bleeding, encumbrance, injuries |
+
+### Tasks (in order)
+- [ ] Healing and regeneration (survival item 1); the demo needs wounds to heal between fights
+- [ ] Human NPC base: villager and guard prefabs, reusing the combat and navigation of the wolf AI
+- [ ] Demo map: two villages with houses, a smithy, a hut where the daughter is held
+- [ ] Families and villages as data, with relation scores and a deed log (in memory)
+- [ ] Simple relation UI: hover or select an NPC to see village, family, score and reasons
+- [ ] Quest: talk to the smith, accept, free the daughter, bring her back, reward
+- [ ] Prisoner: the daughter follows the player once freed; guards react if they see it
+- [ ] Force path: recruit up to ~10 villagers into the squad for the attack
+- [ ] Stealth path: night-time sneaking, guard view cones, being spotted triggers alarm
+- [ ] Consequences: killings set family feuds; after the quest, a revenge party from a
+      wronged family comes to the home village (force path), or tension stays low (stealth path)
+- [ ] Campfire and resting on the road between the villages (simplified survival items 3–4)
+- [ ] Play-test and write down the verdict below
+
+### Fun test: questions the demo must answer
+- Does choosing between force and stealth feel like a real decision?
+- Does the revenge party feel earned (the player understands why it came)?
+- Do players care about the named families, or are they just enemies?
+- Does survival add tension on the road, or does it get in the way?
+- Would a player want to play again and try the other approach?
+
+**Verdict:** *(to be filled in after play-testing)*
+
 ## Next: survival mechanics
 
-Ordered by priority. Each item notes where the work goes.
+Full-game survival features, ordered by priority. Only item 1 (and a simple
+version of items 3–4) is needed for the demo. Each item notes where the work goes.
 
 ### 1. Healing and regeneration
 `CharacterStats.Heal()` is never called, so every wound is permanent.
