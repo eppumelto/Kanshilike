@@ -157,10 +157,64 @@ playstyle. The values below are a **first draft** to tune in play-testing.
 - [ ] A tribe field on characters; modifiers applied in `CharacterStats` and `SkillSet`
 - [ ] Show the tribe on the character UI / squad card
 - [ ] Tribe choice when starting a game or recruiting characters (playable tribes only)
-- [ ] Needs human NPCs first (only wolves exist now): human NPC AI, factions and relations
+- [ ] Needs human NPCs first (only wolves exist now): human NPC AI, plus the
+      relations system in the next section
 - [ ] Traders: a trading window that uses the inventory, with tribe-based prices
 - [ ] Raiders: hostile groups that travel to and attack the player's camp or settlement
 - [ ] Tribe-fitting names, clothing and equipment for each tribe
+
+## Villages, families and relations
+
+Every character has three layers of identity. Together they decide how the
+character feels about the player and about other NPCs.
+
+| Layer | Example | What it is | What it mainly affects |
+|---|---|---|---|
+| **Tribe** | Hämäläinen | Culture and "race" (see Tribes) | Attributes; a broad starting attitude between tribes |
+| **Village / faction** | A Hämäläinen hill-fort village | The political group the character lives in and is loyal to | Alliances, wars, trade access, who is hostile on sight |
+| **Family** (*suku*) | The Kurki family | Blood ties across villages | Personal loyalty, feuds and revenge, recruitment |
+
+Families can span several villages, so the layers can pull in different
+directions: a man from a hostile village may still help the player because his
+sister's family is the player's ally.
+
+*Design note:* each character's attitude is one **relation score** (-100 to 100)
+toward the player and toward other groups, built from:
+`tribe relation + village relation + family relation + personal history`.
+To keep this readable (design pillar 1), the UI always shows **why**: e.g.
+"Same tribe +10, village at war with yours -40, you saved his brother +30".
+Score bands set behaviour: hostile (attacks), unfriendly (won't trade or talk),
+neutral, friendly (better prices, help in fights), loyal (can be recruited).
+
+**What changes relations**
+- Trading, gifts, helping in fights and completing requests raise them.
+- Stealing, attacking and killing lower them. Hurting someone angers their
+  village; **killing** someone angers their whole family, wherever its members live.
+- **Blood feud:** killing a family member can start a feud. That family's
+  members become hostile and may come looking for revenge, even from friendly
+  villages. Feuds can be settled by paying blood money or with time.
+- Recruiting a character makes their family friendlier. Recruiting someone from
+  a feuding family brings the feud into your squad.
+
+**The player's side**
+- The player's squad is its own small group with its own reputation, starting
+  out as a household of one family (chosen at the start, with the tribe).
+- Squad members keep their village and family. Their relations carry over to the
+  squad, partly: a recruit's family likes you more; their family's enemies like you less.
+
+### Tasks
+- [ ] Data: `VillageDefinition` (tribe, home location, relations to other villages)
+      and `FamilyDefinition` (name, tribe, members across villages)
+- [ ] Village and family fields on characters, next to the tribe
+- [ ] `RelationManager`: stores group-to-group relations and per-character personal history,
+      and computes a character's relation score with its reasons
+- [ ] Relation events: trade, gift, help, steal, attack, kill; who hears about each
+- [ ] Behaviour from score bands: hostile NPCs attack, friendly ones trade and help
+- [ ] Relation UI: show village, family and the reasons for the score on the character panel
+- [ ] Blood feuds: start, revenge parties, settling with blood money
+- [ ] Recruitment that uses relations (loyal characters can join the squad)
+- [ ] Player household: choose tribe and family at the start of a game
+- [ ] Later: marriages between families as alliances; village leaders; family trees
 
 ## Later / ideas
 
