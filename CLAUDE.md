@@ -7,7 +7,9 @@ You control a small group of characters who must eat, drink, rest, fight wildlif
 **Setting: Iron Age Finland** (roughly 500 BC – 1100 AD): boreal forest, lakes,
 bogs and harsh winters. Every character has a tribe (the game's races), a village
 and a family; together they decide relations with the player and NPCs (see
-"Tribes" and "Villages, families and relations" in the plan). Keep items,
+"Tribes" and "Villages, families and relations" in the plan). **Relations and
+feuds are the game's driving force next to survival: choices have lasting
+consequences and the world remembers them.** Keep items,
 buildings and names fitting the era. The
 setting and the design pillars (survival should stay fun, not become a chore)
 are in `docs/PLAN.md`; check new mechanics against them.

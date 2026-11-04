@@ -29,6 +29,10 @@ a source of flavour, not a rule to follow everywhere. Check every new mechanic a
    (the campfire covers warmth, cooking, rest and safety) over many small meters.
 5. **Tunable.** Keep rates in config values so a difficulty setting can scale
    them, and so survival can be made gentler if play-testing shows it's tedious.
+6. **Relations and feuds are the driving force.** Surviving is half the game;
+   the other half is navigating relations between families and villages. Problems
+   can be solved in several ways (force, stealth, talk, or something in between),
+   each with lasting consequences, and **the world remembers what you did**.
 
 ## Done
 
@@ -178,6 +182,44 @@ Families can span several villages, so the layers can pull in different
 directions: a man from a hostile village may still help the player because his
 sister's family is the player's ally.
 
+### Feuds as the driving force
+
+Relations and feuds are what the game is about, alongside survival (design
+pillar 6). The detailed feud rules will be designed later; this is the vision
+they must serve.
+
+**Example: the smith's daughter.** A village is raided and the smith's daughter
+is taken. The smith hires the player to bring her back. The player chooses how:
+
+| Approach | What the player does | Consequence |
+|---|---|---|
+| **Force** | Raises a band of 10 men, pillages and burns the raiders' village | Daughter freed, but **every survivor and their families** now feud with the player |
+| **Stealth** | Sneaks in at night, takes her and leaves | Few or no deaths; the raiders are angry but there may be no blood feud |
+| **In between** | Kills only the guards, pays a ransom, talks or threatens | Consequences in proportion to the harm done |
+
+The smith's family is grateful in every case. What differs is who else now has
+a reason to hate the player.
+
+**Principles**
+- **The world remembers.** Deeds are stored permanently, per family and per
+  person: who killed whom, who burned what, who helped. Survivors come back
+  for revenge, years later in game time if needed. Nothing resets on its own.
+- **Choices, not a right answer.** Force is fast and loud, stealth is slow and
+  risky, talking costs money or favours. Each opens and closes different doors.
+- **Feuds spread through families.** Because families span villages, one burned
+  village can make enemies in places the player has never been.
+- **Consequences are visible.** The player can always see which families hate
+  them and why (relation UI), so feuds feel earned, not random.
+
+**What this needs** (most of it after human NPCs exist)
+- Jobs and requests given by NPCs (e.g. "rescue my daughter")
+- Kidnapping and prisoners: NPCs can be taken, held and freed
+- Stealth: sneaking, night-time cover, guards with sight lines
+- Raising a band: hiring or calling in allies for one fight
+- Burning and pillaging settlements
+- A permanent deed log per family and per character, saved with the game
+- Revenge: families with a feud send people after the player
+
 *Design note:* each character's attitude is one **relation score** (-100 to 100)
 toward the player and toward other groups, built from:
 `tribe relation + village relation + family relation + personal history`.
@@ -211,7 +253,7 @@ neutral, friendly (better prices, help in fights), loyal (can be recruited).
 - [ ] Relation events: trade, gift, help, steal, attack, kill; who hears about each
 - [ ] Behaviour from score bands: hostile NPCs attack, friendly ones trade and help
 - [ ] Relation UI: show village, family and the reasons for the score on the character panel
-- [ ] Blood feuds: start, revenge parties, settling with blood money
+- [ ] Design the detailed feud rules (see "Feuds as the driving force"), then build: start, revenge parties, settling with blood money
 - [ ] Recruitment that uses relations (loyal characters can join the squad)
 - [ ] Player household: choose tribe and family at the start of a game
 - [ ] Later: marriages between families as alliances; village leaders; family trees
@@ -223,7 +265,7 @@ neutral, friendly (better prices, help in fights), loyal (can be recruited).
 - [ ] Settlements and other NPCs: farmsteads, hill forts, traders
 - [ ] Sauna as a base building (best rest, warmth and healing)
 - [ ] Difficulty settings that scale survival rates (design pillar 5)
-- [ ] Saving and loading the game
+- [ ] Saving and loading the game (required for the world to remember deeds; see Feuds)
 - [ ] Clean up or remove `Assets/Scripts/Old/`
 
 ## Known issues
