@@ -18,6 +18,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private Coroutine combatLoopRoutine;
 	private GameObject activeActionLabel;
 	private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
+	private static readonly Vector3 LabelOffset = Vector3.up * 1.6f;
+	private const float FaceAttackerSeconds = 3f;
+	private Transform combatOpponent;
+	private Transform lastAttacker;
+	private float lastAttackedTime;
 
 	// Athletics XP: award XP per unit of distance traveled
 	private Vector3 lastPosition;
@@ -104,7 +109,10 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			baseMoveSpeed = agent.speed;
 
 		if (stats != null)
+		{
 			stats.OnDied += HandleDied;
+			stats.OnAttacked += HandleAttacked;
+		}
 
 		// Initialize sliders
 		hungerSlider.maxValue = 100f;
@@ -130,6 +138,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 		if (agent != null && agent.enabled && baseMoveSpeed > 0f)
 			agent.speed = baseMoveSpeed * SpeedMultiplierFor(encumbrance);
+
+		FaceOpponent();
 
 		if (IsAlive && Time.time >= nextAutoConsumeCheck)
 		{
@@ -159,6 +169,30 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			}
 			return ring;
 		}
+	}
+
+	// Standing fighters turn to whoever they fight or whoever just swung at them, which is what
+	// lets a shield cover them. While walking the agent steers, so a fleeing back stays exposed.
+	private void FaceOpponent()
+	{
+		if (!IsAlive || agent == null || !agent.enabled || agent.velocity.sqrMagnitude > 0.04f)
+			return;
+
+		Transform opponent = combatOpponent;
+		if (opponent == null && lastAttacker != null && Time.time - lastAttackedTime <= FaceAttackerSeconds)
+			opponent = lastAttacker;
+
+		if (opponent != null)
+			CombatFacing.TurnToward(transform, opponent.position);
+	}
+
+	private void HandleAttacked(GameObject attacker, bool blockedWithShield)
+	{
+		lastAttacker = attacker != null ? attacker.transform : null;
+		lastAttackedTime = Time.time;
+
+		if (blockedWithShield)
+			ShowFloatingText("Blocked!", 0.6f);
 	}
 
 	public void SetSelected(bool selected)
@@ -222,6 +256,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	{
 		StopAllCoroutines();
 		combatLoopRoutine = null;
+		combatOpponent = null;
 		ClearActionLabel();
 		ReleaseReservedSlot();
 	}
@@ -245,6 +280,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			if (targetStats != null && !targetStats.IsAlive)
 				break;
 
+			combatOpponent = targetComponent.transform;
+
 			AttackProfile profile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
 			if (Vector3.Distance(transform.position, targetComponent.transform.position) > profile.Range)
 			{
@@ -261,6 +298,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		}
 
 		combatLoopRoutine = null;
+		combatOpponent = null;
 		ReleaseReservedSlot();
 	}
 
@@ -293,8 +331,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			// Show a floating action label above the character while waiting.
 			if (harvestingLabelPrefab != null)
 			{
-				activeActionLabel = Instantiate(harvestingLabelPrefab);
-				activeActionLabel.transform.SetParent(transform);
+				activeActionLabel = SpawnLabel();
 				var actionLabel = activeActionLabel.GetComponent<HarvestingLabel>();
 				if (actionLabel != null)
 				{
@@ -464,7 +501,10 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private void OnDestroy()
 	{
 		if (stats != null)
+		{
 			stats.OnDied -= HandleDied;
+			stats.OnAttacked -= HandleAttacked;
+		}
 	}
 
 	private void ReleaseReservedSlot()
@@ -562,13 +602,19 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		}
 	}
 
+	private GameObject SpawnLabel()
+	{
+		GameObject label = Instantiate(harvestingLabelPrefab, transform);
+		label.transform.localPosition = LabelOffset;
+		return label;
+	}
+
 	private void ShowFloatingText(string text, float seconds)
 	{
 		if (harvestingLabelPrefab == null)
 			return;
 
-		GameObject label = Instantiate(harvestingLabelPrefab);
-		label.transform.SetParent(transform);
+		GameObject label = SpawnLabel();
 		var labelText = label.GetComponent<HarvestingLabel>();
 		if (labelText != null)
 			labelText.SetText(text);

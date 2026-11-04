@@ -211,6 +211,19 @@ public class Inventory : MonoBehaviour
 
 	public void RemoveOne(Entry entry) => RemoveCount(entry, 1, notify: true);
 
+	/// <summary>Removes one of this item from the first stack holding it.</summary>
+	public void RemoveOneOf(Item item)
+	{
+		foreach (var e in entries)
+		{
+			if (e.item == item)
+			{
+				RemoveOne(e);
+				return;
+			}
+		}
+	}
+
 	/// <summary>Sets a stack's size; 0 or less removes it.</summary>
 	public void SetCount(Entry entry, int count)
 	{

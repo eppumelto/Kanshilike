@@ -49,6 +49,10 @@ public static class CombatFormulaResolver
 
         float initiative = GetInitiativeMultiplier(actor, config);
 
+        ShieldItem carriedShield = GetShield(actor);
+        if (carriedShield != null)
+            speed *= carriedShield.attackSpeedMultiplier;
+
         return new AttackProfile
         {
             AttackRating = Mathf.Max(0.1f, attackRating),
@@ -66,15 +70,38 @@ public static class CombatFormulaResolver
             + GetSkillProgress(actor, config.strengthSkill) * config.initiativeStrengthScale;
     }
 
-    public static float GetBlockRating(ICombatActor actor, CombatFormulaConfig config)
+    /// <summary>The shield the actor carries, or null.</summary>
+    public static ShieldItem GetShield(ICombatActor actor)
+    {
+        if (!actor.CanUseEquipment || actor.Equipment == null)
+            return null;
+
+        return actor.Equipment.GetEquipped(EquipSlot.Shield) as ShieldItem;
+    }
+
+    /// <summary>The defender's shield if an attack from the attacker's position falls inside its arc, otherwise null.</summary>
+    public static ShieldItem GetCoveringShield(ICombatActor defender, ICombatActor attacker)
+    {
+        ShieldItem shield = GetShield(defender);
+        if (shield == null || defender.ActorTransform == null || attacker == null || attacker.ActorTransform == null)
+            return shield;
+
+        Vector3 toAttacker = attacker.ActorTransform.position - defender.ActorTransform.position;
+        toAttacker.y = 0f;
+        Vector3 facing = defender.ActorTransform.forward;
+        facing.y = 0f;
+        return Vector3.Angle(facing, toAttacker) <= shield.coverageAngle * 0.5f ? shield : null;
+    }
+
+    public static float GetBlockRating(ICombatActor actor, CombatFormulaConfig config, ShieldItem coveringShield = null)
     {
         if (!actor.CanBlock)
             return 0f;
 
         float block = config.blockBaseRating * (1f + GetSkillProgress(actor, config.blockSkill) * config.blockSkillScale);
 
-        if (actor.CanUseEquipment && actor.Equipment != null && actor.Equipment.GetEquipped(EquipSlot.Shield) != null)
-            block *= config.shieldBlockMultiplier;
+        if (coveringShield != null)
+            block *= coveringShield.blockRatingMultiplier;
 
         return block;
     }
@@ -92,11 +119,11 @@ public static class CombatFormulaResolver
         return config.counterBaseRating * (1f + GetSkillProgress(actor, config.counterSkill) * config.counterSkillScale);
     }
 
-    public static float GetDefenseRating(ICombatActor defender, CombatReactionType reaction, CombatFormulaConfig config)
+    public static float GetDefenseRating(ICombatActor defender, CombatReactionType reaction, CombatFormulaConfig config, ShieldItem coveringShield = null)
     {
         switch (reaction)
         {
-            case CombatReactionType.Block: return GetBlockRating(defender, config);
+            case CombatReactionType.Block: return GetBlockRating(defender, config, coveringShield);
             case CombatReactionType.Dodge: return GetDodgeRating(defender, config);
             case CombatReactionType.Counter: return GetCounterRating(defender, config);
             default: return 0f;
@@ -124,11 +151,14 @@ public static class CombatFormulaResolver
 
     /// <summary>
     /// Picks a reaction at random by the configured weights, tilted toward the reactions the
-    /// defender is more skilled at (a master's weight is doubled).
+    /// defender is more skilled at (a master's weight is doubled) and toward blocking when a
+    /// shield covers the attack.
     /// </summary>
-    public static CombatReactionType ChooseReaction(ICombatActor defender, CombatFormulaConfig config)
+    public static CombatReactionType ChooseReaction(ICombatActor defender, CombatFormulaConfig config, ShieldItem coveringShield = null)
     {
         float blockWeight = defender.CanBlock ? config.blockWeight * (1f + GetSkillProgress(defender, config.blockSkill)) : 0f;
+        if (coveringShield != null)
+            blockWeight *= coveringShield.blockWeightMultiplier;
         float dodgeWeight = config.dodgeWeight * (1f + GetSkillProgress(defender, config.dodgeSkill));
         float counterWeight = defender.CanCounter ? config.counterWeight * (1f + GetSkillProgress(defender, config.counterSkill)) : 0f;
 

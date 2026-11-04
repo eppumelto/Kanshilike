@@ -17,4 +17,7 @@ public class WeaponItem : EquippableItem
 
 	[Tooltip("Attack speed multiplier. >1 is faster, <1 is slower.")]
 	[Min(0.1f)] public float attackSpeedMultiplier = 1f;
+
+	[Tooltip("Needs both hands: can't be used together with a shield.")]
+	public bool twoHanded;
 }

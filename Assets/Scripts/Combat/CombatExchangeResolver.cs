@@ -30,13 +30,22 @@ public static class CombatExchangeResolver
         if (attacker == null || defender == null || defenderStats == null || config == null || !defenderStats.IsAlive)
             return new CombatExchangeResult(CombatReactionType.None, false, 0f, 0f);
 
-        CombatReactionType reaction = CombatFormulaResolver.ChooseReaction(defender, config);
+        // A shield only counts when the attacker is inside its arc.
+        ShieldItem coveringShield = CombatFormulaResolver.GetCoveringShield(defender, attacker);
+
+        CombatReactionType reaction = CombatFormulaResolver.ChooseReaction(defender, config, coveringShield);
         onReactionDecided?.Invoke(reaction);
 
-        float defenseRating = CombatFormulaResolver.GetDefenseRating(defender, reaction, config);
+        float defenseRating = CombatFormulaResolver.GetDefenseRating(defender, reaction, config, coveringShield);
         bool defended = Random.value < CombatFormulaResolver.GetDefenseChance(defenseRating, attack.AttackRating);
         bool hitLanded = !defended;
         float counterDamage = 0f;
+
+        GameObject source = attackSource;
+        if (source == null && attacker.ActorTransform != null)
+            source = attacker.ActorTransform.gameObject;
+
+        defenderStats.NotifyAttacked(source, defended && reaction == CombatReactionType.Block && coveringShield != null);
 
         if (defended && reaction == CombatReactionType.Counter)
         {
@@ -56,12 +65,13 @@ public static class CombatExchangeResolver
 
         if (hitLanded)
         {
-            GameObject source = attackSource;
-            if (source == null && attacker.ActorTransform != null)
-                source = attacker.ActorTransform.gameObject;
+            // A failed block with a shield in the way still takes the edge off the hit.
+            float damage = attack.Damage;
+            if (reaction == CombatReactionType.Block && coveringShield != null)
+                damage *= 1f - coveringShield.failedBlockDamageReduction;
 
-            defenderStats.ReceiveDamage(attack.Damage, source);
-            return new CombatExchangeResult(reaction, true, attack.Damage, counterDamage);
+            defenderStats.ReceiveDamage(damage, source);
+            return new CombatExchangeResult(reaction, true, damage, counterDamage);
         }
 
         return new CombatExchangeResult(reaction, false, 0f, counterDamage);

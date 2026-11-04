@@ -33,6 +33,10 @@ public class CharacterStats : MonoBehaviour
 	public bool IsDehydrated => hasNeeds && thirst <= 0f;
 	public event System.Action<float, GameObject> OnDamaged;
 	public event System.Action<GameObject> OnDied;
+	/// <summary>Someone swung at this entity, hit or not. Args: (attacker, blocked with a shield).</summary>
+	public event System.Action<GameObject, bool> OnAttacked;
+
+	public void NotifyAttacked(GameObject attacker, bool blockedWithShield) => OnAttacked?.Invoke(attacker, blockedWithShield);
 
 	void Start()
 	{

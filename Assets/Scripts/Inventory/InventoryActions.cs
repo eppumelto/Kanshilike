@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -120,16 +121,37 @@ public static class InventoryActions
 		int oldCount = entry.count;
 		from.RemoveOne(entry);
 
+		// Whatever is in the way goes to the bag: the slot's item, plus a shield or two-handed
+		// weapon that can't be used together with this item.
+		var displaced = new List<EquippableItem>();
+		EquippableItem conflict = equipment.GetConflict(item);
+		if (conflict != null)
+			displaced.Add(equipment.Unequip(conflict.equipSlot));
+
 		EquippableItem previous = equipment.Equip(item);
-		if (previous != null && (ownerInventory == null || !ownerInventory.AddItem(previous)))
+		if (previous != null)
+			displaced.Add(previous);
+
+		var stored = new List<EquippableItem>();
+		foreach (var d in displaced)
 		{
-			// Roll back: old item back in the slot, the new one back where it was.
-			equipment.Equip(previous);
+			if (ownerInventory != null && ownerInventory.AddItem(d))
+			{
+				stored.Add(d);
+				continue;
+			}
+
+			// Roll back: everything back where it was.
+			foreach (var s in stored)
+				ownerInventory.RemoveOneOf(s);
+			equipment.Unequip(item.equipSlot);
+			foreach (var back in displaced)
+				equipment.Equip(back);
 			if (oldCount == 1)
 				from.Place(item, 1, oldPos, oldRot);
 			else
 				from.Add(item, 1);
-			reason = $"No room for {previous.itemName}";
+			reason = $"No room for {d.itemName}";
 			return false;
 		}
 

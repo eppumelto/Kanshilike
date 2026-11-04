@@ -45,8 +45,6 @@ public class CombatFormulaConfig : ScriptableObject
     [Min(0f)] public float blockSkillScale = 1f;
     [Min(0f)] public float dodgeSkillScale = 1f;
     [Min(0f)] public float counterSkillScale = 1f;
-    [Tooltip("Block rating multiplier while a shield is equipped.")]
-    [Min(1f)] public float shieldBlockMultiplier = 1.5f;
     [Tooltip("A successful counter deals this fraction of the defender's own damage to the attacker.")]
     [Min(0f)] public float counterDamageFraction = 0.5f;
 

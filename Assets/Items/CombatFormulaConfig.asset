@@ -30,7 +30,6 @@ MonoBehaviour:
   blockSkillScale: 1
   dodgeSkillScale: 1
   counterSkillScale: 1
-  shieldBlockMultiplier: 1.5
   counterDamageFraction: 0.5
   strengthSkill: 2
   unarmedSkill: 0

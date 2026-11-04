@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3643e97e01058a048a5be00875158329, type: 3}
+  m_Name: RoundShield
+  m_EditorClassIdentifier: Assembly-CSharp::ShieldItem
+  itemName: Round Shield
+  icon: {fileID: 21300000, guid: 6188755faeee62e4d9dd1f9b9e81b947, type: 3}
+  description: Blocks attacks from the front. Useless against what you can't face.
+  maxStack: 1
+  size: {x: 3, y: 3}
+  weight: 4
+  equipSlot: 1
+  equippedPrefab: {fileID: 8900348360961578815, guid: b21a819c241ac5e4abdd31afbf49527b, type: 3}
+  coverageAngle: 140
+  blockRatingMultiplier: 1.6
+  blockWeightMultiplier: 2
+  failedBlockDamageReduction: 0.3
+  attackSpeedMultiplier: 0.9

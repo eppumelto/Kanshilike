@@ -88,6 +88,18 @@ public class EquipmentManager : MonoBehaviour
 		return equipped.TryGetValue(slot, out var entry) ? entry.item : null;
 	}
 
+	/// <summary>The item in another slot that can't be used together with this one (two-handed weapon vs shield), or null.</summary>
+	public EquippableItem GetConflict(EquippableItem item)
+	{
+		if (item is WeaponItem weapon && weapon.twoHanded)
+			return GetEquipped(EquipSlot.Shield);
+
+		if (item.equipSlot == EquipSlot.Shield && GetEquipped(EquipSlot.Hand) is WeaponItem held && held.twoHanded)
+			return held;
+
+		return null;
+	}
+
 	private Transform GetSocket(EquipSlot slot)
 	{
 		foreach (var s in sockets)

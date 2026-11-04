@@ -49,6 +49,7 @@ public static class WolfChaseCombatExecutor
         }
 
         agent.ResetPath();
+        CombatFacing.TurnToward(attackerObject.transform, detectedTarget.position);
         if (Time.time < nextAttackTime)
             return WolfChaseStepResult.Continue;
 
