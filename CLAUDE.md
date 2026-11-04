@@ -5,7 +5,8 @@ You control a small group of characters who must eat, drink, rest, fight wildlif
 (wolves for now), loot and survive in an open world.
 
 **Setting: Iron Age Finland** (roughly 500 BC – 1100 AD): boreal forest, lakes,
-bogs and harsh winters. Keep items, buildings and names fitting the era. The
+bogs and harsh winters. Characters belong to one of five tribes (the game's races;
+see "Tribes" in the plan). Keep items, buildings and names fitting the era. The
 setting and the design pillars (survival should stay fun, not become a chore)
 are in `docs/PLAN.md`; check new mechanics against them.
 

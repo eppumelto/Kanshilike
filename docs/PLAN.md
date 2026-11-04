@@ -124,6 +124,44 @@ neglected cold does damage, with a clear warning first (design pillar 2).
 - [ ] Per-limb health: a hurt leg slows you, a hurt arm weakens attacks
 - [ ] Works with directional combat and the shield arc
 
+## Tribes
+
+Five tribes act as the game's character races. Each has its own attributes, with
+strengths and weaknesses. Three are playable; the Swedes and Novgorodians come
+from outside and are met as **traders and raiders**.
+
+*Design note:* keep each tribe to **two strengths and one weakness**, and build
+them from things the game already has: skill starting levels and XP rates
+(`SkillType`), needs rates (`CharacterStats`), warmth, carry weight and trade
+prices. No tribe should be the obvious best pick; each one suits a different
+playstyle. The values below are a **first draft** to tune in play-testing.
+
+### Playable
+
+| Tribe | Home | Playstyle | Strengths | Weakness |
+|---|---|---|---|---|
+| **Suomalainen** (Finns proper) | South-west coast, Varsinais-Suomi | Farmer and trader | Better trade prices; food fills more (farming and fishing know-how) | Weaker in the wilderness: loses warmth faster |
+| **Hämäläinen** (Tavastians) | Inland lakes and forests, Häme | Hunter and woodsman | Faster Harvesting and better loot from animals; resists cold (warmth lasts longer) | Worse trade prices (outsiders to the trade routes) |
+| **Karjalainen** (Karelians) | East, around Lake Ladoga | Warrior | Higher starting combat skills; earn combat XP faster | Get hungry faster |
+
+### Not playable: traders and raiders
+
+| Tribe | Comes from | As traders | As raiders |
+|---|---|---|---|
+| **Ruotsalainen** (Swedes) | Across the sea, from the west | Arrive by boat on coasts and rivers; sell iron weapons, salt and silver | Raid coastal settlements in groups; well armed, heavy armour |
+| **Novgorodilainen** (Novgorodians) | The east, from Novgorod | Travelling merchants with caravans; buy furs, sell cloth, jewellery and grain | Organised war bands that collect tribute; shields and spears |
+
+### Tasks
+- [ ] `TribeDefinition` ScriptableObject: name, description, playable flag,
+      skill modifiers, needs-rate multipliers, warmth and trade modifiers
+- [ ] A tribe field on characters; modifiers applied in `CharacterStats` and `SkillSet`
+- [ ] Show the tribe on the character UI / squad card
+- [ ] Tribe choice when starting a game or recruiting characters (playable tribes only)
+- [ ] Needs human NPCs first (only wolves exist now): human NPC AI, factions and relations
+- [ ] Traders: a trading window that uses the inventory, with tribe-based prices
+- [ ] Raiders: hostile groups that travel to and attack the player's camp or settlement
+- [ ] Tribe-fitting names, clothing and equipment for each tribe
+
 ## Later / ideas
 
 - [ ] Basic crafting (bandages, waterskins, spears) from harvested materials
