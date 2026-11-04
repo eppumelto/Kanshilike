@@ -4,6 +4,11 @@ A squad-based survival RPG inspired by Kenshi, built in **Unity 6 (6000.3.8f1)**
 You control a small group of characters who must eat, drink, rest, fight wildlife
 (wolves for now), loot and survive in an open world.
 
+**Setting: Iron Age Finland** (roughly 500 BC – 1100 AD): boreal forest, lakes,
+bogs and harsh winters. Keep items, buildings and names fitting the era. The
+setting and the design pillars (survival should stay fun, not become a chore)
+are in `docs/PLAN.md`; check new mechanics against them.
+
 ## Planning
 
 **The roadmap and current work live in [`docs/PLAN.md`](docs/PLAN.md).**

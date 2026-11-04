@@ -3,6 +3,34 @@
 Living plan for the project. Tick items off in the same commit that finishes them.
 Mark the item being worked on with **(in progress)**.
 
+## Setting
+
+**Iron Age Finland**, roughly 500 BC – 1100 AD. Boreal pine and spruce forest,
+lakes, rivers, bogs and long, cold winters. Small farmsteads and hill forts, fur
+trade, iron smelted from bog ore. Wildlife: wolves, bears, elk, lynx.
+
+Use the setting for flavour and for item and building choices, for example:
+- fire made with flint, steel and tinder fungus (*taula*); pine resin and birch bark as kindling
+- shelters such as a lean-to (*laavu*) and a hut or tent (*kota*); a sauna as a late-game base building
+- furs and wool for warmth; iron axes, spears and round shields; dried fish and meat
+- Finnish place and character names
+
+## Design pillars
+
+The goal is survival that creates **decisions and stories, not chores**. Realism is
+a source of flavour, not a rule to follow everywhere. Check every new mechanic against these:
+
+1. **Every need has a clear, fun answer.** If a mechanic only asks the player to
+   click a button regularly, automate it (like auto eat and drink) or cut it.
+2. **Warn before punishing.** Show a warning state long before damage starts, and
+   make failures slow and recoverable rather than instant deaths.
+3. **Survival drives travel and planning.** Needs should push the player to choose
+   where to go, when to camp and what to carry, not to micro-manage the squad.
+4. **Few mechanics, each with weight.** Prefer one system that ties into others
+   (the campfire covers warmth, cooking, rest and safety) over many small meters.
+5. **Tunable.** Keep rates in config values so a difficulty setting can scale
+   them, and so survival can be made gentler if play-testing shows it's tedious.
+
 ## Done
 
 - [x] RTS camera, box selection, selection rings, select-all, squad bar
@@ -33,38 +61,75 @@ Ordered by priority. Each item notes where the work goes.
 Tiredness rises and sleeping lowers it, but nothing reads the value.
 - [ ] Penalties when tiredness is high: slower movement, attack speed and harvest speed
 - [ ] Pass out when tiredness reaches 100
-- [ ] Better rest in a bed than on the ground (a rest-quality value on the Sleep interaction)
+- [ ] Rest quality: how well a character sleeps depends on where (see item 3)
 
-### 3. Hungry and thirsty warning states
+### 3. Safe resting places
+The player needs somewhere to sleep without being eaten.
+
+*Design note:* rest quality comes from the place: open ground (poor rest, wolves
+may attack), by a campfire (normal rest, wolves keep their distance), in a shelter
+such as a *laavu* or *kota* (good rest, warm). A settlement or home base is the
+safest. Danger works through things the player can see coming: wolves are drawn
+to sleepers in the dark and scared off by fire, and a squad member can stand
+watch so sleepers are woken when something approaches.
+- [ ] Rest-quality value on Sleep interactions (ground, fire, shelter, bed)
+- [ ] Wolves avoid lit campfires; sleeping characters in the open can be targeted
+- [ ] Night watch: an awake squad member wakes sleepers when a threat comes near
+- [ ] Placeable shelter (*laavu*) built from wood and branches
+
+### 4. Campfire building
+The core of life on the road. One fire covers warmth, cooking, rest and safety
+(design pillar 4).
+
+*Design note:* select a character, choose "Build campfire", place it on the
+ground. It costs wood (gathered with Harvest) and needs fire-making kit (flint,
+steel and *taula* tinder). The fire burns for a set number of hours and can be fed
+more wood. Keep it to a few clicks: no separate kindling or tinder stages.
+- [ ] Wood item from harvesting trees or deadwood; fire-making kit item
+- [ ] Build mode: place a campfire prefab on valid ground, consuming the materials
+- [ ] Campfire burns down over in-game hours; "Add wood" interaction; light radius at night
+- [ ] Campfire is a heat source (item 5), a cooking station (item 7) and a safe-rest spot (item 3)
+
+### 5. Warmth
+*Design note:* a single **warmth** meter, not a full temperature simulation. It
+falls at night and in winter and when wet, and rises by a fire, in a shelter and
+with warm clothing. Being cold slows the character and stops healing. Only long,
+neglected cold does damage, with a clear warning first (design pillar 2).
+- [ ] Add `warmth` to `ClothingItem` (fur and wool are warm, iron armour is not)
+- [ ] Warmth meter in `CharacterStats`, ticked hourly; colder at night via `TimeManager`
+- [ ] Heat sources: campfire and shelter radius
+- [ ] Cold states: chilly (warning), cold (slower, no healing), freezing (slow damage)
+- [ ] Later: seasons and snow, which make winter travel a real expedition
+
+### 6. Hungry and thirsty warning states
 - [ ] Intermediate states (e.g. below 25) with small penalties before damage starts
 - [ ] Show the state on the character UI / squad card
 
-### 4. Cooking and spoilage
+### 7. Cooking and spoilage
 - [ ] Food freshness: raw meat spoils over time and spoiled food can be harmful
-- [ ] Campfire interactable: cook Raw Meat into Cooked Meat (fills more, keeps longer)
+- [ ] Cook Raw Meat into Cooked Meat at a campfire (fills more, keeps longer)
+- [ ] Smoked or dried meat and fish that keep for long journeys
 - [ ] Cooking skill
 
-### 5. Bleeding
+### 8. Bleeding
 - [ ] Wolf bites can cause bleeding (damage over time) until bandaged
 - [ ] Ties into the bandage item from item 1
 
-### 6. Temperature and weather
-- [ ] Add `warmth` to `ClothingItem` (trade-off between armor and warmth)
-- [ ] Cold nights from `TimeManager`; campfires are heat sources
-- [ ] Penalties or damage from being cold
-
-### 7. Encumbrance
+### 9. Encumbrance
 - [ ] Moving over the weight limit slows you down
 - [ ] Carrying heavy loads trains Strength and Athletics
 
-### 8. Body-part injuries (bigger milestone)
+### 10. Body-part injuries (bigger milestone)
 - [ ] Per-limb health: a hurt leg slows you, a hurt arm weakens attacks
 - [ ] Works with directional combat and the shield arc
 
 ## Later / ideas
 
 - [ ] Basic crafting (bandages, waterskins, spears) from harvested materials
-- [ ] More wildlife and other NPC types
+- [ ] More wildlife fitting the setting: bears, elk, lynx
+- [ ] Settlements and other NPCs: farmsteads, hill forts, traders
+- [ ] Sauna as a base building (best rest, warmth and healing)
+- [ ] Difficulty settings that scale survival rates (design pillar 5)
 - [ ] Saving and loading the game
 - [ ] Clean up or remove `Assets/Scripts/Old/`
 
