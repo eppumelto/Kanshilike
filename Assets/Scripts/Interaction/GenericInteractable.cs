@@ -136,7 +136,8 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 				return; // object destroyed, skip use decrement
 			}
 			case InteractionActionType.Attack:
-				interactor.Attack(this);
+				if (TryGetComponent(out CombatActor actor))
+					interactor.AttackTarget(actor);
 				break;
 			case InteractionActionType.Harvest:
 				if (!interactor.collectItem(entry.item))

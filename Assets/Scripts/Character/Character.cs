@@ -13,23 +13,13 @@ public class Character : CombatActor, ICombatAnimationEventSource
 
 	private NavMeshAgent agent;
 	private Inventory inventory;
-	private Coroutine combatLoopRoutine;
 	private GameObject activeActionLabel;
-	private Coroutine treatmentRoutine;
-	private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
 	private static readonly Vector3 LabelOffset = Vector3.up * 1.6f;
 	private const float FaceAttackerSeconds = 3f;
-	private Transform combatOpponent;
+	private CharacterOrder currentOrder;
+	private Coroutine orderRoutine;
 	private Transform lastAttacker;
 	private float lastAttackedTime;
-
-	private const float MaxShootingAngle = 15f;
-	private const float ArrowSpawnForward = 0.6f;
-	private const float ArrowSpawnUp = 0.3f;
-	private const float ArrowShotXP = 2f;
-	private const float DefaultBodyRadius = 0.5f;
-	// Shared by all characters: only used within a single check.
-	private static readonly RaycastHit[] ClearShotHits = new RaycastHit[16];
 
 	// Athletics XP: award XP per unit of distance traveled
 	private Vector3 lastPosition;
@@ -44,6 +34,8 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	[SerializeField] private bool canUseEquipment = true;
 	[SerializeField] private bool canBlock = true;
 	[SerializeField] private bool canCounter = true;
+	[Tooltip("When attacked while idle or busy with a task, the character fights back, but gives up chasing the attacker beyond this distance.")]
+	[SerializeField, Min(0f)] private float selfDefenseChaseDistance = 15f;
 
 	[Header("Auto Eat / Drink")]
 	[Tooltip("Eats food from the inventory whenever hunger drops below this (0-100). 0 = never.")]
@@ -87,6 +79,14 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	}
 
 	public override Faction Faction => faction;
+
+	/// <summary>What the character is doing now, or null when idle.</summary>
+	public CharacterOrder CurrentOrder => currentOrder;
+	internal NavMeshAgent Agent => agent;
+	internal Inventory CarriedInventory => inventory;
+	internal CombatFormulaConfig CombatConfig => combatFormulaConfig;
+	/// <summary>Who the character is fighting; FaceOpponent turns toward them.</summary>
+	internal Transform CombatOpponent { get; set; }
 	public override bool CanUseEquipment => canUseEquipment;
 	public override bool CanBlock => canBlock;
 	public override bool CanDodge => true;
@@ -108,7 +108,6 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		{
 			stats.OnDied += HandleDied;
 			stats.OnAttacked += HandleAttacked;
-			stats.OnWokeUp += ClearActionLabel;
 		}
 	}
 
@@ -147,7 +146,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		if (!IsAlive || agent == null || !agent.enabled || agent.velocity.sqrMagnitude > 0.04f)
 			return;
 
-		Transform opponent = combatOpponent;
+		Transform opponent = CombatOpponent;
 		if (opponent == null && lastAttacker != null && Time.time - lastAttackedTime <= FaceAttackerSeconds)
 			opponent = lastAttacker;
 
@@ -163,172 +162,122 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		if (blockedWithShield)
 			ShowFloatingText("Blocked!", 0.6f);
 
-		if (treatmentRoutine != null)
+		if (currentOrder != null && currentOrder.StopsWhenAttacked)
 		{
-			CancelCurrentAction();
+			EndCurrentOrder();
 			ShowFloatingText("Interrupted", 2f);
 		}
+
+		DefendAgainst(attacker);
+	}
+
+	// Fights back against a hostile attacker, unless walking away or already fighting.
+	private void DefendAgainst(GameObject attacker)
+	{
+		CombatActor enemy = attacker != null ? attacker.GetComponentInParent<CombatActor>() : null;
+		bool hostile = enemy != null && enemy != this && enemy.IsAlive && FactionRelations.AreHostile(Faction, enemy.Faction);
+		bool orderYields = currentOrder == null || currentOrder.YieldsToSelfDefence;
+
+		if (CombatRules.ShouldDefendSelf(IsAlive, orderYields, hostile))
+			GiveOrder(new AttackOrder(enemy, selfDefenseChaseDistance));
 	}
 
 	public void MoveTo(Vector3 position)
 	{
-		if (agent != null)
+		if (agent != null && agent.isActiveAndEnabled)
 			agent.SetDestination(position);
+	}
+
+	internal void StopMoving()
+	{
+		if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+			agent.ResetPath();
 	}
 
 	/// <summary>Player move order: drops whatever the character was doing and walks there.</summary>
 	public void CommandMove(Vector3 position)
 	{
-		if (!IsAlive)
-			return;
-
-		CancelCurrentAction();
-		MoveTo(position);
+		GiveOrder(new MoveOrder(position));
 	}
 
 	public void InteractWith(IInteractable target, InteractionOption option)
 	{
-		if (!IsAlive)
+		if (option.kind != InteractionKind.Attack)
+		{
+			GiveOrder(new InteractOrder(target, option.id));
+			return;
+		}
+
+		CombatActor actor = target is Component component ? component.GetComponentInParent<CombatActor>() : null;
+		if (actor == null)
+		{
+			Debug.LogWarning($"[Combat] {characterName} can't attack {target.GetName()}: it has no CombatActor.");
+			return;
+		}
+
+		AttackTarget(actor);
+	}
+
+	/// <summary>Fight this actor until it dies or another order is given. The one way to start a fight, for players and AI.</summary>
+	public void AttackTarget(CombatActor target)
+	{
+		if (target == null || target == this)
 			return;
 
-		CancelCurrentAction();
+		GiveOrder(new AttackOrder(target));
+	}
 
-		if (option.kind == InteractionKind.Attack)
-			combatLoopRoutine = StartCoroutine(CombatLoop(target, option.id));
-		else
-			StartCoroutine(MoveAndPerform(target, option.id));
+	/// <summary>Ends the current order and starts this one. Null just stops.</summary>
+	public void GiveOrder(CharacterOrder order)
+	{
+		EndCurrentOrder();
+		if (order == null || !IsAlive || !isActiveAndEnabled)
+			return;
+
+		currentOrder = order;
+		Coroutine routine = StartCoroutine(RunOrder(order));
+		// An order that finished straight away has already cleared itself.
+		if (currentOrder == order)
+			orderRoutine = routine;
+	}
+
+	// Steps the order by hand, so stopping this one coroutine stops the order too.
+	private IEnumerator RunOrder(CharacterOrder order)
+	{
+		IEnumerator run = order.Run(this);
+		while (run.MoveNext())
+			yield return run.Current;
+
+		if (currentOrder == order)
+		{
+			currentOrder = null;
+			orderRoutine = null;
+			order.End(this);
+		}
+	}
+
+	private void EndCurrentOrder()
+	{
+		CharacterOrder order = currentOrder;
+		if (order == null)
+			return;
+
+		currentOrder = null;
+		if (orderRoutine != null)
+			StopCoroutine(orderRoutine);
+		orderRoutine = null;
+		order.End(this);
 	}
 
 	private void HandleDied(GameObject killer)
 	{
-		CancelCurrentAction();
+		EndCurrentOrder();
 		// Gear goes into the bag so the body can be looted.
 		InventoryActions.UnequipAllInto(equipment, inventory);
 	}
 
-	private void CancelCurrentAction()
-	{
-		StopAllCoroutines();
-		combatLoopRoutine = null;
-		treatmentRoutine = null;
-		combatOpponent = null;
-		if (stats != null)
-			stats.WakeUp();
-		ClearActionLabel();
-		ReleaseReservedSlot();
-	}
-
-	// Walks into range, swings, waits out the attack interval, repeats until the target dies,
-	// disappears, or the player gives another order.
-	private IEnumerator CombatLoop(IInteractable target, string actionId)
-	{
-		if (combatFormulaConfig == null)
-		{
-			Debug.LogWarning($"[Combat] {characterName} has no CombatFormulaConfig assigned.");
-			yield break;
-		}
-
-		float nextShotTime = 0f;
-
-		while (IsTargetValid(target) && stats != null && stats.IsAlive)
-		{
-			if (target is not Component targetComponent)
-				break;
-
-			CharacterStats targetStats = targetComponent.GetComponent<CharacterStats>();
-			if (targetStats != null && !targetStats.IsAlive)
-				break;
-
-			combatOpponent = targetComponent.transform;
-
-			BowItem bow = CombatFormulaResolver.GetBow(this);
-			if (bow != null && (inventory == null || inventory.FindFirst<ArrowItem>() == null))
-			{
-				ShowFloatingText("Out of arrows", 2f);
-				break;
-			}
-
-			AttackProfile profile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
-			float distance = Vector3.Distance(transform.position, targetComponent.transform.position);
-			if (bow != null && distance > bow.maxPursuitDistance)
-			{
-				ShowFloatingText("Target got away", 2f);
-				break;
-			}
-
-			bool inRange = distance <= profile.Range;
-			if (!inRange || (bow != null && !HasGoodShot(targetComponent, bow, distance)))
-			{
-				MoveTo(targetComponent.transform.position);
-				yield return null;
-				continue;
-			}
-
-			if (agent != null)
-				agent.ResetPath();
-
-			// FaceOpponent is turning us; an archer waits until the target is in front.
-			if (bow != null && (Time.time < nextShotTime || !IsFacing(targetComponent.transform.position)))
-			{
-				yield return null;
-				continue;
-			}
-
-			target.ExecuteInteraction(this, actionId);
-
-			// Between shots an archer keeps following: the checks above run again while reloading.
-			if (bow != null)
-			{
-				nextShotTime = Time.time + Mathf.Max(0.1f, profile.Interval);
-				yield return null;
-				continue;
-			}
-
-			yield return new WaitForSeconds(Mathf.Max(0.1f, profile.Interval));
-		}
-
-		// The fight is over: don't keep walking to where the target last was.
-		if (agent != null && agent.isOnNavMesh)
-			agent.ResetPath();
-
-		combatLoopRoutine = null;
-		combatOpponent = null;
-		ReleaseReservedSlot();
-	}
-
-	private IEnumerator MoveAndPerform(IInteractable target, string actionId)
-	{
-		Vector3 dest = target.GetInteractionPoint();
-		MoveTo(dest);
-
-		while (Vector3.Distance(transform.position, dest) > 2f)
-		{
-			if (!CanStillPerform(target, actionId))
-				yield break;
-			yield return null;
-		}
-
-		// Some actions (e.g. Harvest) take time. Scale duration by the character's harvest speed.
-		float duration = target.GetInteractionDuration(actionId);
-		if (duration > 0f)
-		{
-			float scaledDuration = duration / stats.HarvestSpeedMultiplier;
-
-			// Show a floating action label above the character while waiting.
-			ShowActionLabel(target.GetInteractionLabel(actionId));
-
-			yield return new WaitForSeconds(scaledDuration);
-
-			ClearActionLabel();
-		}
-
-		// Another character may have picked up or used up the target while we walked or worked.
-		if (CanStillPerform(target, actionId))
-			target.ExecuteInteraction(this, actionId);
-	}
-
 	// Floating label above the character that stays until ClearActionLabel.
-	private void ShowActionLabel(string text)
+	internal void ShowActionLabel(string text)
 	{
 		if (harvestingLabelPrefab == null)
 			return;
@@ -340,29 +289,11 @@ public class Character : CombatActor, ICombatAnimationEventSource
 			actionLabel.SetText(text);
 	}
 
-	private void ClearActionLabel()
+	internal void ClearActionLabel()
 	{
 		if (activeActionLabel != null)
 			Destroy(activeActionLabel);
 		activeActionLabel = null;
-	}
-
-	private bool CanStillPerform(IInteractable target, string actionId)
-	{
-		if (!IsTargetValid(target))
-			return false;
-
-		foreach (var option in target.GetAvailableInteractions(this))
-			if (option.id == actionId)
-				return true;
-		return false;
-	}
-
-	private static bool IsTargetValid(IInteractable target)
-	{
-		// Destroyed Unity objects only compare equal to null through UnityEngine.Object's
-		// operator, which a plain interface null check bypasses.
-		return target is UnityEngine.Object unityObject ? unityObject != null : target != null;
 	}
 
 	public void Drink(float amount)
@@ -379,104 +310,54 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	public void Sleep()
 	{
 		Debug.Log($"{characterName} is sleeping");
-		stats?.Sleep(8f);
-		ShowActionLabel("Sleeping...");
+		GiveOrder(new SleepOrder(8f));
 	}
-	public void Attack(IInteractable target)
+	/// <summary>One swing or shot at the target. AttackOrder walks into range and calls this.</summary>
+	internal void StrikeAt(CombatActor target, BowItem bow, AttackProfile profile)
 	{
-		if (combatFormulaConfig == null)
-		{
-			Debug.LogWarning($"[Combat] {characterName} has no CombatFormulaConfig assigned.");
-			return;
-		}
-
-		if (target is not Component targetComponent)
-		{
-			Debug.LogWarning($"[Combat] {characterName} attacked a non-component target and cannot resolve combat.");
-			return;
-		}
-
-		if (stats != null && !stats.IsAlive)
+		if (!IsAlive || target == null || !target.IsAlive)
 			return;
 
-		BowItem bow = CombatFormulaResolver.GetBow(this);
-
-		// Target already has its maximum number of attackers; CombatLoop keeps us close and retries.
+		// The target already has its maximum number of attackers: AttackOrder keeps us close and retries.
 		// Archers shoot from a distance, so they don't take up a place around the target.
-		if (bow == null && !TryReserveTargetSlot(targetComponent))
+		if (bow == null && !TryTakeAttackSlot(target))
 			return;
 
-		AttackProfile attackerProfile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
-
-		// CombatLoop walks into range before calling Attack, so this only trips if the target moved away.
-		float distance = Vector3.Distance(transform.position, targetComponent.transform.position);
-		if (distance > attackerProfile.Range)
+		// AttackOrder walks into range first, so this only trips if the target moved away.
+		if (Vector3.Distance(transform.position, target.transform.position) > profile.Range)
 			return;
 
-		CharacterStats defenderStats = targetComponent.GetComponent<CharacterStats>();
-		if (defenderStats == null)
-		{
-			Debug.Log($"[Combat] {characterName} found no combat stats on target; awarding training XP only.");
-			skills?.GainXP(attackerProfile.UsedWeaponSkill, 5f);
-			return;
-		}
-
-		if (!defenderStats.IsAlive)
-		{
-			ReleaseReservedSlot();
-			return;
-		}
-
-		OnAttackWindup?.Invoke(new CombatAnimationEventArgs(gameObject, targetComponent.gameObject, CombatReactionType.None, 0f));
+		OnAttackWindup?.Invoke(new CombatAnimationEventArgs(gameObject, target.gameObject, CombatReactionType.None, 0f));
 
 		if (bow != null)
 		{
-			ShootArrow(targetComponent, bow, attackerProfile);
+			CharacterArchery.Shoot(this, target, bow, profile);
 			return;
 		}
 
-		ICombatActor defender = CombatExchangeResolver.ResolveDefender(targetComponent, defenderStats);
-		ResolveExchange(defender, attackerProfile, defenderStats);
-	}
+		CombatExchangeResult result = ResolveStrike(target, profile, combatFormulaConfig,
+			reaction => OnReactionResolved?.Invoke(new CombatAnimationEventArgs(gameObject, target.gameObject, reaction, 0f)));
 
-	// Spends one arrow and sends it toward where the target will be, strayed by the archer's spread.
-	private void ShootArrow(Component target, BowItem bow, AttackProfile attackProfile)
-	{
-		Inventory.Entry arrows = inventory != null ? inventory.FindFirst<ArrowItem>() : null;
-		if (arrows == null)
-			return;
-
-		ArrowProjectile prefab = ((ArrowItem)arrows.item).projectilePrefab;
-		if (prefab == null)
+		if (result.HitLanded)
 		{
-			Debug.LogWarning($"[Combat] {arrows.item.itemName} has no projectile prefab assigned.");
-			return;
+			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, target.gameObject, result.Reaction, result.DamageDealt));
+			string defense = result.Reaction == CombatReactionType.None ? "undefended" : $"{result.Reaction} failed";
+			Debug.Log($"[Combat] {characterName} hit {target.name} for {result.DamageDealt:F1} ({defense}).");
+			skills?.GainXP(profile.UsedWeaponSkill, 10f);
+			skills?.GainXP(SkillType.Strength, 2f);
 		}
+		else
+		{
+			if (result.CounterDamage > 0f)
+				Debug.Log($"[Combat] {characterName}'s attack was countered for {result.CounterDamage:F1} damage.");
 
-		inventory.RemoveOne(arrows);
-
-		Vector3 targetVelocity = VelocityOf(target);
-		Vector3 origin = BodyCenter(this) + transform.forward * ArrowSpawnForward + Vector3.up * ArrowSpawnUp;
-		Vector3 aimPoint = BodyCenter(target);
-		float flightSeconds = Vector3.Distance(origin, aimPoint) / bow.arrowSpeed;
-		aimPoint += targetVelocity * flightSeconds;
-
-		// Lobbed just enough that gravity brings it down on the aim point.
-		Vector3 velocity = (aimPoint - origin) / flightSeconds - 0.5f * flightSeconds * Physics.gravity;
-
-		float spread = CombatFormulaResolver.GetBowSpread(this, bow, combatFormulaConfig, targetVelocity.magnitude);
-		Vector2 stray = Random.insideUnitCircle * spread;
-		velocity = Quaternion.AngleAxis(stray.x, Vector3.up) * Quaternion.AngleAxis(stray.y, transform.right) * velocity;
-
-		ArrowProjectile projectile = Instantiate(prefab, origin, Quaternion.LookRotation(velocity));
-		projectile.Launch(velocity, attackProfile, combatFormulaConfig, gameObject,
-			(defender, result) => HandleArrowHit(defender, result, attackProfile.UsedWeaponSkill));
-
-		skills?.GainXP(attackProfile.UsedWeaponSkill, ArrowShotXP);
+			Debug.Log($"[Combat] {characterName}'s attack was prevented by {result.Reaction}.");
+			skills?.GainXP(profile.UsedWeaponSkill, 3f);
+		}
 	}
 
 	// Runs when the arrow lands, by which time the archer may be gone.
-	private void HandleArrowHit(ICombatActor defender, CombatExchangeResult result, SkillType skill)
+	internal void HandleArrowHit(ICombatActor defender, CombatExchangeResult result, SkillType skill)
 	{
 		if (this == null)
 			return;
@@ -497,100 +378,9 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		}
 	}
 
-	// Worth an arrow? Otherwise the archer holds fire and moves closer.
-	private bool HasGoodShot(Component target, BowItem bow, float distance)
-	{
-		if (!HasClearShot(target))
-			return false;
-
-		float chance = CombatFormulaResolver.GetBowHitChance(this, bow, combatFormulaConfig, distance, VelocityOf(target).magnitude, BodyRadius(target));
-		return chance >= bow.minHitChance;
-	}
-
-	private static Vector3 VelocityOf(Component target)
-	{
-		return target.TryGetComponent<NavMeshAgent>(out var targetAgent) ? targetAgent.velocity : Vector3.zero;
-	}
-
-	private static float BodyRadius(Component body)
-	{
-		Collider bodyCollider = body.GetComponent<Collider>();
-		if (bodyCollider == null)
-			return DefaultBodyRadius;
-
-		Vector3 extents = bodyCollider.bounds.extents;
-		return Mathf.Max(extents.x, extents.z);
-	}
-
-	// Only the world blocks a shot. Characters in the way don't stop the archer firing, and may catch the arrow.
-	private bool HasClearShot(Component target)
-	{
-		Vector3 from = BodyCenter(this);
-		Vector3 toTarget = BodyCenter(target) - from;
-		int count = Physics.RaycastNonAlloc(from, toTarget.normalized, ClearShotHits, toTarget.magnitude, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-
-		for (int i = 0; i < count; i++)
-		{
-			if (ClearShotHits[i].collider.GetComponentInParent<CharacterStats>() == null)
-				return false;
-		}
-
-		return true;
-	}
-
-	private bool IsFacing(Vector3 point)
-	{
-		Vector3 toPoint = point - transform.position;
-		toPoint.y = 0f;
-		return Vector3.Angle(transform.forward, toPoint) <= MaxShootingAngle;
-	}
-
-	private static Vector3 BodyCenter(Component body)
-	{
-		Collider bodyCollider = body.GetComponent<Collider>();
-		return bodyCollider != null ? bodyCollider.bounds.center : body.transform.position;
-	}
-
-	private void ResolveExchange(ICombatActor defender, AttackProfile attackerProfile, CharacterStats defenderStats)
-	{
-		CombatExchangeResult result = CombatExchangeResolver.ResolveAndApply(
-			attackerProfile,
-			this,
-			defender,
-			defenderStats,
-			combatFormulaConfig,
-			gameObject,
-			reaction => OnReactionResolved?.Invoke(new CombatAnimationEventArgs(gameObject, defender.ActorTransform.gameObject, reaction, 0f)));
-
-		if (result.HitLanded)
-		{
-			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, defender.ActorTransform.gameObject, result.Reaction, result.DamageDealt));
-			string defense = result.Reaction == CombatReactionType.None ? "undefended" : $"{result.Reaction} failed";
-			Debug.Log($"[Combat] {characterName} hit for {result.DamageDealt:F1} ({defense}).");
-			skills?.GainXP(attackerProfile.UsedWeaponSkill, 10f);
-			skills?.GainXP(SkillType.Strength, 2f);
-		}
-		else
-		{
-			if (result.CounterDamage > 0f)
-				Debug.Log($"[Combat] {characterName}'s attack was countered for {result.CounterDamage:F1} damage.");
-
-			Debug.Log($"[Combat] {characterName}'s attack was prevented by {result.Reaction}.");
-			skills?.GainXP(attackerProfile.UsedWeaponSkill, 3f);
-		}
-
-		if (!defenderStats.IsAlive)
-			ReleaseReservedSlot();
-	}
-
-	private bool TryReserveTargetSlot(Component targetComponent)
-	{
-		return reservedTargetSlot.TryReserve(gameObject, targetComponent);
-	}
-
 	private void OnDisable()
 	{
-		CancelCurrentAction();
+		EndCurrentOrder();
 	}
 
 	private void OnDestroy()
@@ -599,13 +389,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		{
 			stats.OnDied -= HandleDied;
 			stats.OnAttacked -= HandleAttacked;
-			stats.OnWokeUp -= ClearActionLabel;
 		}
-	}
-
-	private void ReleaseReservedSlot()
-	{
-		reservedTargetSlot.Release(gameObject);
 	}
 
 	/// <summary>
@@ -682,8 +466,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	}
 
 	/// <summary>
-	/// Starts binding a wound with a healing item from this character's inventory. The heal and the
-	/// item cost come at the end, so an interruption costs only time.
+	/// Starts binding a wound with a healing item from this character's inventory (see TreatWoundsOrder).
 	/// </summary>
 	public bool TryTreatWounds(Inventory.Entry entry, out string reason)
 	{
@@ -694,7 +477,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 			return false;
 		}
 
-		if (treatmentRoutine != null)
+		if (currentOrder is TreatWoundsOrder)
 		{
 			reason = "Already binding wounds";
 			return false;
@@ -719,34 +502,8 @@ public class Character : CombatActor, ICombatAnimationEventSource
 			return false;
 		}
 
-		CancelCurrentAction();
-		if (agent != null && agent.isOnNavMesh)
-			agent.ResetPath();
-
-		treatmentRoutine = StartCoroutine(TreatWounds(entry, item));
+		GiveOrder(new TreatWoundsOrder(entry, item));
 		return true;
-	}
-
-	private IEnumerator TreatWounds(Inventory.Entry entry, HealingItem item)
-	{
-		HealingConfig config = stats.HealingConfig;
-		float bonus = skills != null ? skills.GetBonus(SkillType.FirstAid) : 1f;
-
-		ShowActionLabel(item.progressLabel);
-		yield return new WaitForSeconds(HealingRules.TreatmentSeconds(item.useSeconds, bonus, config.firstAidSpeedScale, config.minTreatmentSeconds));
-		ClearActionLabel();
-
-		// The stack may have been dragged away or looted while we worked: then nothing is healed or spent.
-		if (inventory.Contains(entry) && stats.IsAlive)
-		{
-			float gained = stats.Heal(HealingRules.TreatmentHeal(item.healAmount, bonus, config.firstAidHealScale));
-			inventory.RemoveOne(entry);
-			skills?.GainXP(SkillType.FirstAid, HealingRules.TreatmentXP(gained, config.firstAidXPPerHealthPoint));
-			ShowFloatingText($"+{gained:F0} HP", 2f);
-			Debug.Log($"{characterName} used {item.itemName}: +{gained:F0} HP");
-		}
-
-		treatmentRoutine = null;
 	}
 
 	/// <summary>Refills every empty container this drink comes in (e.g. empty waterskins). Returns how many.</summary>
@@ -790,7 +547,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		return label;
 	}
 
-	private void ShowFloatingText(string text, float seconds)
+	internal void ShowFloatingText(string text, float seconds)
 	{
 		if (harvestingLabelPrefab == null)
 			return;

@@ -10,7 +10,10 @@ public struct AttackProfile
     public SkillType UsedWeaponSkill;
 }
 
-/// <summary>Combat maths. See CombatFormulaConfig for how skills feed in.</summary>
+/// <summary>
+/// Reads skills and items from combat actors and feeds them into CombatRules, where the maths
+/// lives. See CombatFormulaConfig for how skills feed in.
+/// </summary>
 public static class CombatFormulaResolver
 {
     public static AttackProfile BuildAttackProfile(ICombatActor actor, CombatFormulaConfig config)
@@ -42,33 +45,25 @@ public static class CombatFormulaResolver
         float strength = weapon is BowItem ? 0f : GetSkillProgress(actor, config.strengthSkill);
         float weaponProgress = GetSkillProgress(actor, weaponSkill);
 
-        float attackRating = config.baseAttackRating * ratingMultiplier
-            * (1f + weaponProgress * config.weaponSkillAttackScale + strength * config.strengthAttackScale);
-
-        float damage = baseDamage
-            * (1f + strength * config.strengthDamageScale + weaponProgress * config.weaponSkillDamageScale);
-
-        float initiative = GetInitiativeMultiplier(actor, config);
-
         ShieldItem carriedShield = GetShield(actor);
         if (carriedShield != null)
             speed *= carriedShield.attackSpeedMultiplier;
 
         return new AttackProfile
         {
-            AttackRating = Mathf.Max(0.1f, attackRating),
-            Damage = Mathf.Max(1f, damage),
+            AttackRating = CombatRules.AttackRating(config.baseAttackRating, ratingMultiplier, weaponProgress, config.weaponSkillAttackScale, strength, config.strengthAttackScale),
+            Damage = CombatRules.Damage(baseDamage, strength, config.strengthDamageScale, weaponProgress, config.weaponSkillDamageScale),
             Range = Mathf.Max(0.2f, range),
-            Interval = Mathf.Max(config.minAttackInterval, config.baseAttackInterval / Mathf.Max(0.1f, speed * initiative)),
+            Interval = CombatRules.AttackInterval(config.baseAttackInterval, config.minAttackInterval, speed, GetInitiativeMultiplier(actor, config)),
             UsedWeaponSkill = weaponSkill
         };
     }
 
     public static float GetInitiativeMultiplier(ICombatActor actor, CombatFormulaConfig config)
     {
-        return 1f
-            + GetSkillProgress(actor, config.initiativeSkill) * config.initiativeSkillScale
-            + GetSkillProgress(actor, config.strengthSkill) * config.initiativeStrengthScale;
+        return CombatRules.Initiative(
+            GetSkillProgress(actor, config.initiativeSkill), config.initiativeSkillScale,
+            GetSkillProgress(actor, config.strengthSkill), config.initiativeStrengthScale);
     }
 
     /// <summary>The shield the actor carries, or null.</summary>
@@ -105,31 +100,18 @@ public static class CombatFormulaResolver
 
     public static float GetBlockRating(ICombatActor actor, CombatFormulaConfig config, ShieldItem coveringShield = null)
     {
-        if (!actor.CanBlock)
-            return 0f;
-
-        float block = config.blockBaseRating * (1f + GetSkillProgress(actor, config.blockSkill) * config.blockSkillScale);
-
-        if (coveringShield != null)
-            block *= coveringShield.blockRatingMultiplier;
-
-        return block;
+        return CombatRules.DefenseRating(actor.CanBlock, config.blockBaseRating, GetSkillProgress(actor, config.blockSkill), config.blockSkillScale,
+            coveringShield != null ? coveringShield.blockRatingMultiplier : 1f);
     }
 
     public static float GetDodgeRating(ICombatActor actor, CombatFormulaConfig config)
     {
-        if (!actor.CanDodge)
-            return 0f;
-
-        return config.dodgeBaseRating * (1f + GetSkillProgress(actor, config.dodgeSkill) * config.dodgeSkillScale);
+        return CombatRules.DefenseRating(actor.CanDodge, config.dodgeBaseRating, GetSkillProgress(actor, config.dodgeSkill), config.dodgeSkillScale);
     }
 
     public static float GetCounterRating(ICombatActor actor, CombatFormulaConfig config)
     {
-        if (!actor.CanCounter)
-            return 0f;
-
-        return config.counterBaseRating * (1f + GetSkillProgress(actor, config.counterSkill) * config.counterSkillScale);
+        return CombatRules.DefenseRating(actor.CanCounter, config.counterBaseRating, GetSkillProgress(actor, config.counterSkill), config.counterSkillScale);
     }
 
     public static float GetDefenseRating(ICombatActor defender, CombatReactionType reaction, CombatFormulaConfig config, ShieldItem coveringShield = null)
@@ -141,15 +123,6 @@ public static class CombatFormulaResolver
             case CombatReactionType.Counter: return GetCounterRating(defender, config);
             default: return 0f;
         }
-    }
-
-    /// <summary>Chance (0–1) that a defense of the given rating stops an attack of the given rating.</summary>
-    public static float GetDefenseChance(float defenseRating, float attackRating)
-    {
-        if (defenseRating <= 0f)
-            return 0f;
-
-        return defenseRating / (defenseRating + Mathf.Max(0.1f, attackRating));
     }
 
     public static SkillType GetReactionSkill(CombatReactionType reaction, CombatFormulaConfig config)
@@ -169,25 +142,12 @@ public static class CombatFormulaResolver
     /// </summary>
     public static CombatReactionType ChooseReaction(ICombatActor defender, CombatFormulaConfig config, ShieldItem coveringShield = null)
     {
-        float blockWeight = defender.CanBlock ? config.blockWeight * (1f + GetSkillProgress(defender, config.blockSkill)) : 0f;
-        if (coveringShield != null)
-            blockWeight *= coveringShield.blockWeightMultiplier;
-        float dodgeWeight = defender.CanDodge ? config.dodgeWeight * (1f + GetSkillProgress(defender, config.dodgeSkill)) : 0f;
-        float counterWeight = defender.CanCounter ? config.counterWeight * (1f + GetSkillProgress(defender, config.counterSkill)) : 0f;
-
-        float total = blockWeight + dodgeWeight + counterWeight;
-        if (total <= 0f)
-            return CombatReactionType.None;
-
-        float roll = Random.value * total;
-        if (roll < blockWeight)
-            return CombatReactionType.Block;
-
-        roll -= blockWeight;
-        if (roll < dodgeWeight)
-            return CombatReactionType.Dodge;
-
-        return CombatReactionType.Counter;
+        return CombatRules.ChooseReaction(
+            CombatRules.ReactionWeight(defender.CanBlock, config.blockWeight, GetSkillProgress(defender, config.blockSkill),
+                coveringShield != null ? coveringShield.blockWeightMultiplier : 1f),
+            CombatRules.ReactionWeight(defender.CanDodge, config.dodgeWeight, GetSkillProgress(defender, config.dodgeSkill)),
+            CombatRules.ReactionWeight(defender.CanCounter, config.counterWeight, GetSkillProgress(defender, config.counterSkill)),
+            Random.value);
     }
 
     /// <summary>The bow the actor is holding, or null.</summary>
@@ -199,21 +159,15 @@ public static class CombatFormulaResolver
     /// <summary>Widest a shot can stray from the aim point, in degrees. Bow skill and the aim skill narrow it, a moving target widens it.</summary>
     public static float GetBowSpread(ICombatActor actor, BowItem bow, CombatFormulaConfig config, float targetSpeed)
     {
-        float skill = Mathf.Lerp(GetSkillProgress(actor, bow.weaponSkill), GetSkillProgress(actor, config.aimSkill), config.aimSkillShare);
-        float spread = Mathf.Lerp(bow.untrainedSpread, bow.masterSpread, skill);
-        return spread + bow.movingTargetSpread * Mathf.Clamp01(targetSpeed / bow.movingTargetSpeed);
+        return CombatRules.BowSpread(
+            GetSkillProgress(actor, bow.weaponSkill), GetSkillProgress(actor, config.aimSkill), config.aimSkillShare,
+            bow.untrainedSpread, bow.masterSpread, bow.movingTargetSpread, targetSpeed, bow.movingTargetSpeed);
     }
 
-    /// <summary>Rough chance (0–1) that a shot lands on a target of the given radius: how much of the spread the target fills.</summary>
+    /// <summary>Rough chance (0–1) that a shot lands on a target of the given radius.</summary>
     public static float GetBowHitChance(ICombatActor actor, BowItem bow, CombatFormulaConfig config, float distance, float targetSpeed, float targetRadius)
     {
-        float spread = GetBowSpread(actor, bow, config, targetSpeed);
-        if (spread <= 0f)
-            return 1f;
-
-        float targetAngle = Mathf.Atan2(targetRadius, Mathf.Max(0.01f, distance)) * Mathf.Rad2Deg;
-        float fill = targetAngle / spread;
-        return Mathf.Clamp01(fill * fill);
+        return CombatRules.BowHitChance(GetBowSpread(actor, bow, config, targetSpeed), distance, targetRadius);
     }
 
     private static WeaponItem GetWeapon(ICombatActor actor)
@@ -230,6 +184,6 @@ public static class CombatFormulaResolver
         if (actor.Skills == null)
             return 0f;
 
-        return Mathf.Max(0f, actor.Skills.GetBonus(skill) - 1f);
+        return CombatRules.SkillProgress(actor.Skills.GetBonus(skill));
     }
 }

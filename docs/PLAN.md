@@ -80,7 +80,18 @@ needed yet**.
 
 ### Tasks (in order)
 - [x] Healing and regeneration (survival item 1); the demo needs wounds to heal between fights ([plan](plans/healing-regeneration.md))
-- [ ] Shared attack and orders: one attack path and a current-order object for players and AI, plus self-defence, so human NPCs don't add a third way to fight (findings 1 and 2 in [architecture](architecture.md))
+- [x] Shared attack and orders: one attack path and a current-order object for players and AI, plus self-defence, so human NPCs don't add a third way to fight (findings 1 and 2 in [architecture](architecture.md))
+
+      *Design note:* combat formulas move into the plain C# `Kanshilike.Rules` assembly
+      (`CombatRules`, next to `HealingRules`) with tests, before anything else changes.
+      `CombatActor` owns the attack slot and the strike itself (`TryTakeAttackSlot`,
+      `ResolveStrike`), which both `Character` and `AnimalAI` use. A `Character` runs one
+      `CharacterOrder` at a time: move, attack, interact, sleep and treat wounds. Giving a new
+      order ends the old one cleanly, replacing the hand-wired coroutines. `AttackTarget(CombatActor)`
+      is the one way to start a fight, for the player and later for NPC brains. Self-defence: a
+      character attacked by a hostile actor fights back unless it is walking somewhere or already
+      fighting, and gives up a chase it started itself after a set distance. Archery moves out of
+      `Character` into `CharacterArchery`. Behaviour for the player stays the same otherwise.
 - [ ] Human NPC base: a `Character` prefab, with villager and guard prefabs on top of it, using the shared attack and orders and reusing the wolf AI's navigation and perception
 - [ ] Demo map: two villages with houses, a smithy, a hut where the daughter is held
 - [ ] Families and villages as data, with relation scores and a deed log (in memory)
