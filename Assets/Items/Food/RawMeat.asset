@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FoodItem
   itemName: Raw Meat
   icon: {fileID: 21300000, guid: 4b1bb6daa43b44147a154c7bbb58d4c6, type: 3}
-  description: Wolf meat. Restores 25 hunger.
+  description: Raw meat. Restores 25 hunger.
   maxStack: 10
   size: {x: 1, y: 1}
   weight: 0.4

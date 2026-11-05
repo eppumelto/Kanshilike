@@ -76,4 +76,62 @@ public static class CombatExchangeResolver
 
         return new CombatExchangeResult(reaction, false, 0f, counterDamage);
     }
+
+    /// <summary>
+    /// An arrow reaching a defender. Whether it was on target is already settled by its flight, so
+    /// the only defense left is a shield facing where it came from. No dodge, parry or counter.
+    /// </summary>
+    public static CombatExchangeResult ResolveProjectileHit(
+        AttackProfile attack,
+        ICombatActor defender,
+        CharacterStats defenderStats,
+        CombatFormulaConfig config,
+        GameObject shooter,
+        Vector3 cameFrom)
+    {
+        if (defender == null || defenderStats == null || config == null || !defenderStats.IsAlive)
+            return new CombatExchangeResult(CombatReactionType.None, false, 0f, 0f);
+
+        ShieldItem coveringShield = CombatFormulaResolver.GetCoveringShield(defender, cameFrom);
+        float blockRating = coveringShield != null ? CombatFormulaResolver.GetBlockRating(defender, config, coveringShield) : 0f;
+        CombatReactionType reaction = blockRating > 0f ? CombatReactionType.Block : CombatReactionType.None;
+        bool blocked = reaction == CombatReactionType.Block
+            && Random.value < CombatFormulaResolver.GetDefenseChance(blockRating, attack.AttackRating);
+
+        defenderStats.NotifyAttacked(shooter, blocked);
+
+        if (reaction == CombatReactionType.Block)
+            defender.Skills?.GainXP(config.blockSkill, blocked ? config.defenseSuccessXP : config.defenseFailXP);
+
+        if (blocked)
+            return new CombatExchangeResult(reaction, false, 0f, 0f);
+
+        float damage = attack.Damage;
+        if (reaction == CombatReactionType.Block)
+            damage *= 1f - coveringShield.failedBlockDamageReduction;
+
+        // Wound first, so anything reacting to the damage already moves at the slowed speed.
+        defenderStats.Wound(config.arrowWoundSpeedMultiplier, config.minWoundSpeedMultiplier);
+        defenderStats.ReceiveDamage(damage, shooter);
+        return new CombatExchangeResult(reaction, true, damage, 0f);
+    }
+
+    /// <summary>The target as a combat actor: its own, or a stand-in built from its components.</summary>
+    public static ICombatActor ResolveDefender(Component target, CharacterStats stats)
+    {
+        if (target.TryGetComponent<ICombatActor>(out var actor))
+            return actor;
+
+        EquipmentManager equipment = target.GetComponent<EquipmentManager>();
+        bool hasEquipment = equipment != null;
+        return new CombatActorProxy(
+            target.transform,
+            stats,
+            target.GetComponent<SkillSet>(),
+            equipment,
+            canUseEquipment: hasEquipment,
+            canBlock: hasEquipment,
+            canDodge: true,
+            canCounter: true);
+    }
 }

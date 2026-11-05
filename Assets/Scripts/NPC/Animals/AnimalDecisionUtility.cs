@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public static class WolfDecisionUtility
+public static class AnimalDecisionUtility
 {
     public static bool ShouldReactToDetection(Transform detectedTarget)
     {

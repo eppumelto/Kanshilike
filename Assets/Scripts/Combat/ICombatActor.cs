@@ -9,5 +9,6 @@ public interface ICombatActor
 
     bool CanUseEquipment { get; }
     bool CanBlock { get; }
+    bool CanDodge { get; }
     bool CanCounter { get; }
 }

@@ -723,12 +723,24 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: f120b67a043cb704a8ec38390712f2b7, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f120b67a043cb704a8ec38390712f2b7, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f120b67a043cb704a8ec38390712f2b7, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: f120b67a043cb704a8ec38390712f2b7, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.95
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f120b67a043cb704a8ec38390712f2b7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.12
+      value: 0.44
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f120b67a043cb704a8ec38390712f2b7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1365,7 +1377,7 @@ RectTransform:
   m_Father: {fileID: 173325837}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1440,7 +1452,7 @@ RectTransform:
   m_Father: {fileID: 2121611000}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1672,7 +1684,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: axe_1 (1)
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5147203986610472915, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -2530,6 +2543,61 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &838884510
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 838884512}
+  - component: {fileID: 838884511}
+  m_Layer: 0
+  m_Name: DeerSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &838884511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838884510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2239b2addef8ff14998f378387b0ebed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimalSpawner
+  animalPrefab: {fileID: 353370235274172260, guid: f9a84b3266195474ab986902c7839749, type: 3}
+  personalities: []
+  groupCount: 4
+  loneChance: 0.2
+  groupSizeMin: 3
+  groupSizeMax: 6
+  spawnRadius: 22.3
+  minDistanceBetweenGroups: 0
+  minDistanceFromCharacters: 0
+  memberSpacing: 5
+  waypointInterval: 30
+--- !u!4 &838884512
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838884510}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.08, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &841304140
 GameObject:
   m_ObjectHideFlags: 0
@@ -2547,7 +2615,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &841304141
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3490,7 +3558,7 @@ RectTransform:
   m_Father: {fileID: 1255950358}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -4023,6 +4091,63 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1220009297}
   m_CullTransparentMesh: 1
+--- !u!1 &1244013492
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1244013494}
+  - component: {fileID: 1244013493}
+  m_Layer: 0
+  m_Name: WolfSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1244013493
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1244013492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2239b2addef8ff14998f378387b0ebed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WolfSpawner
+  animalPrefab: {fileID: 2253871621166797963, guid: 6591552483fc0cf4da736e9397637097, type: 3}
+  personalities:
+  - {fileID: 11400000, guid: f7882aa88ce26614a8ee308673fe44b6, type: 2}
+  - {fileID: 11400000, guid: 2e751628569605043bc6ad81f268340e, type: 2}
+  groupCount: 2
+  loneChance: 0.3
+  groupSizeMin: 3
+  groupSizeMax: 5
+  spawnRadius: 387.4
+  minDistanceBetweenGroups: 12
+  minDistanceFromCharacters: 10
+  memberSpacing: 4
+  waypointInterval: 20
+--- !u!4 &1244013494
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1244013492}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.08, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1255950357
 GameObject:
   m_ObjectHideFlags: 0
@@ -4168,7 +4293,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 1, z: 4}
+  m_LocalScale: {x: 400, y: 400, z: 400}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -4424,6 +4549,14 @@ MonoBehaviour:
     count: 2
     position: {x: 0, y: 0}
     rotated: 0
+  - item: {fileID: 11400000, guid: b2e4d8f36c9a4e71ad2f8b4c3e5a7192, type: 2}
+    count: 1
+    position: {x: 4, y: 0}
+    rotated: 0
+  - item: {fileID: 11400000, guid: c3d5e9a47fab4d82be3a9c5d4f6b82a3, type: 2}
+    count: 20
+    position: {x: 6, y: 0}
+    rotated: 0
 --- !u!114 &1440672252
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4463,6 +4596,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f0608327a96072040b584160ecbed331, type: 2}
   - {fileID: 11400000, guid: 4b7186c1ecac3c04db512fc4ebd557a4, type: 2}
   - {fileID: 11400000, guid: 5be8ce71be3823044ae4aa69f25b203b, type: 2}
+  - {fileID: 11400000, guid: a1f3c7e25d8b4f609c1e7a3b2d4f6081, type: 2}
 --- !u!114 &1440672255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4727,7 +4861,7 @@ Transform:
   m_GameObject: {fileID: 1633399486}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7110269, y: -0, z: -0, w: 0.7031648}
-  m_LocalPosition: {x: 0.15336, y: 0.38, z: -17.89}
+  m_LocalPosition: {x: 0.15336, y: 0.5, z: -2.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4742,9 +4876,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1633399486}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5aa2d74a66c07404382d74fa3ddef937, type: 3}
+  m_Script: {fileID: 11500000, guid: d64c21433fc681640a825d98317d0a0f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WolfAI
+  m_EditorClassIdentifier: Assembly-CSharp::AnimalAI
   personality: {fileID: 11400000, guid: f7882aa88ce26614a8ee308673fe44b6, type: 2}
   behaviorProfile: {fileID: 0}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
@@ -4922,6 +5056,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f0608327a96072040b584160ecbed331, type: 2}
   - {fileID: 11400000, guid: 4b7186c1ecac3c04db512fc4ebd557a4, type: 2}
   - {fileID: 11400000, guid: 5be8ce71be3823044ae4aa69f25b203b, type: 2}
+  - {fileID: 11400000, guid: a1f3c7e25d8b4f609c1e7a3b2d4f6081, type: 2}
 --- !u!114 &1706174142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5211,7 +5346,7 @@ RectTransform:
   m_Father: {fileID: 823882154}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -5989,7 +6124,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 561251382823878090, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.19
+      value: 0.406
       objectReference: {fileID: 0}
     - target: {fileID: 561251382823878090, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -6326,3 +6461,5 @@ SceneRoots:
   - {fileID: 189533209}
   - {fileID: 763595078}
   - {fileID: 1713147532178889284}
+  - {fileID: 1244013494}
+  - {fileID: 838884512}

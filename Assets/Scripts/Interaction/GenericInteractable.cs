@@ -93,7 +93,8 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 		{
 			if (IsExhausted(entry))
 				continue;
-			options.Add(new InteractionOption(entry.id, entry.displayName));
+			InteractionKind kind = entry.actionType == InteractionActionType.Attack ? InteractionKind.Attack : InteractionKind.Task;
+			options.Add(new InteractionOption(entry.id, entry.displayName, kind));
 		}
 		return options;
 	}

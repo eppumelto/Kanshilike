@@ -117,16 +117,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46afa8032bf8aad4e95218f919c77b0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GenericInteractable
-  objectName: Object
+  objectName: Spear
   interactions:
-  - id: 
-    displayName: 
+  - id: 1
+    displayName: Spear
     actionType: 3
     value: 0
     maxUses: 0
     randomMin: 0
     randomMax: 0
-    item: {fileID: 0}
+    item: {fileID: 11400000, guid: 8a0a080778a278941a8bbc402be4b68a, type: 2}
     harvestDuration: 0
     progressLabel: 
     depletedPrefab: {fileID: 0}

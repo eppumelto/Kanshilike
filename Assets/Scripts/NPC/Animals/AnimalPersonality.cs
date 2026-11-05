@@ -47,19 +47,31 @@ public class AnimalPersonality : ScriptableObject
     [Min(0f)] public float idleTimeMax = 8f;
 
     [Header("Fleeing")]
-    [Tooltip("How far the wolf tries to run in the opposite direction of the threat per flee destination update.")]
+    [Tooltip("How far the animal tries to run in the opposite direction of the threat per flee destination update.")]
     [Min(0f)] public float fleeDistance = 25f;
 
-    [Tooltip("Minimum distance to threat before the wolf considers itself safe while fleeing.")]
+    [Tooltip("Minimum distance to threat before the animal considers itself safe while fleeing.")]
     [Min(0f)] public float fleeSafeDistance = 30f;
 
+    [Tooltip("Seconds the animal can flee at full speed before tiring. 0 = never tires.")]
+    [Min(0f)] public float fleeSprintSeconds = 0f;
+
+    [Tooltip("Flee speed once tired. Set it below a character's walking speed to let them catch up.")]
+    [Min(0f)] public float tiredFleeSpeed = 2.5f;
+
+    [Tooltip("Seconds of not fleeing it takes to fully recover from tiring.")]
+    [Min(0f)] public float staminaRecoverySeconds = 30f;
+
     [Header("Chasing")]
-    [Tooltip("The wolf gives up the chase when the player exceeds this distance.")]
+    [Tooltip("The animal gives up the chase when the player exceeds this distance.")]
     [Min(0f)] public float chaseGiveUpDistance = 30f;
 
     [Header("Combat Profile")]
     [Tooltip("Animals generally cannot block. Keep false unless you intentionally want this behavior.")]
     public bool canBlock = false;
+
+    [Tooltip("Animals generally cannot dodge. Keep false unless you intentionally want this behavior.")]
+    public bool canDodge = false;
 
     [Tooltip("Whether this animal can counterattack if skill checks allow it.")]
     public bool canCounter = true;

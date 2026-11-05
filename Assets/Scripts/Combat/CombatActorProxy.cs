@@ -8,6 +8,7 @@ public sealed class CombatActorProxy : ICombatActor
     public EquipmentManager Equipment { get; }
     public bool CanUseEquipment { get; }
     public bool CanBlock { get; }
+    public bool CanDodge { get; }
     public bool CanCounter { get; }
 
     public CombatActorProxy(
@@ -17,6 +18,7 @@ public sealed class CombatActorProxy : ICombatActor
         EquipmentManager equipment,
         bool canUseEquipment,
         bool canBlock,
+        bool canDodge,
         bool canCounter)
     {
         ActorTransform = actorTransform;
@@ -25,6 +27,7 @@ public sealed class CombatActorProxy : ICombatActor
         Equipment = equipment;
         CanUseEquipment = canUseEquipment;
         CanBlock = canBlock;
+        CanDodge = canDodge;
         CanCounter = canCounter;
     }
 }
