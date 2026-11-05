@@ -1,0 +1,25 @@
+# Git decides what is text. Text is stored and checked out with LF, which is what Unity
+# writes, so line endings stay the same on every machine whatever core.autocrlf says.
+# Unity's .asset files can be text or binary, so leave those to this detection.
+* text=auto eol=lf
+
+# C# hunk headers in diffs
+*.cs diff=csharp
+
+# Never treat these as text
+*.dll binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tga binary
+*.psd binary
+*.exr binary
+*.hdr binary
+*.fbx binary
+*.blend binary
+*.ttf binary
+*.otf binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.pdf binary

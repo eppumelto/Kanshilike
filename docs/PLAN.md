@@ -80,7 +80,8 @@ needed yet**.
 
 ### Tasks (in order)
 - [x] Healing and regeneration (survival item 1); the demo needs wounds to heal between fights ([plan](plans/healing-regeneration.md))
-- [ ] Human NPC base: villager and guard prefabs, reusing the combat and navigation of the wolf AI
+- [ ] Shared attack and orders: one attack path and a current-order object for players and AI, plus self-defence, so human NPCs don't add a third way to fight (findings 1 and 2 in [architecture](architecture.md))
+- [ ] Human NPC base: a `Character` prefab, with villager and guard prefabs on top of it, using the shared attack and orders and reusing the wolf AI's navigation and perception
 - [ ] Demo map: two villages with houses, a smithy, a hut where the daughter is held
 - [ ] Families and villages as data, with relation scores and a deed log (in memory)
 - [ ] Simple relation UI: hover or select an NPC to see village, family, score and reasons

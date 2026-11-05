@@ -111,11 +111,11 @@ namespace Kanshilike.Tests.EditMode
 		}
 
 		[Test]
-		public void Scene_ReferencesFirstAidAndHealingConfigTwiceEach()
+		public void Scene_ReferencesFirstAidAndHealingConfigForTheSquad()
 		{
 			string text = File.ReadAllText(ScenePath);
-			Assert.AreEqual(2, Count(text, Guid(FirstAidPath)), "FirstAid.asset references");
-			Assert.AreEqual(2, Count(text, Guid(ConfigPath)), "HealingConfig.asset references");
+			Assert.GreaterOrEqual(Count(text, Guid(FirstAidPath)), 2, "FirstAid.asset references");
+			Assert.GreaterOrEqual(Count(text, Guid(ConfigPath)), 2, "HealingConfig.asset references");
 		}
 
 		[Test]

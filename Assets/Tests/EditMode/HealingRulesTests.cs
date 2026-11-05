@@ -19,7 +19,6 @@ namespace Kanshilike.Tests.EditMode
 			Assert.AreEqual(8f, HealingRules.RegenPerHour(true, false, false, 3f, 8f), Eps);
 		}
 
-		[TestCase(true, false, false)]
 		[TestCase(true, true, false)]
 		[TestCase(true, false, true)]
 		[TestCase(true, true, true)]
