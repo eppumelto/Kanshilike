@@ -71,6 +71,20 @@ public class CombatFormulaConfig : ScriptableObject
     [Min(0f)] public float dodgeWeight = 1f;
     [Min(0f)] public float counterWeight = 0.6f;
 
+    [Header("Attacker XP")]
+    [Tooltip("Weapon (or Unarmed) skill XP for a melee hit that lands.")]
+    [Min(0f)] public float meleeHitXP = 10f;
+    [Tooltip("Strength XP for a melee hit that lands.")]
+    [Min(0f)] public float meleeHitStrengthXP = 2f;
+    [Tooltip("Weapon skill XP for a melee attack the defender stops.")]
+    [Min(0f)] public float meleeMissXP = 3f;
+    [Tooltip("Bow skill XP for loosing an arrow, hit or miss.")]
+    [Min(0f)] public float arrowShotXP = 2f;
+    [Tooltip("Bow skill XP when an arrow hits.")]
+    [Min(0f)] public float arrowHitXP = 10f;
+    [Tooltip("Bow skill XP when an arrow is blocked.")]
+    [Min(0f)] public float arrowBlockedXP = 3f;
+
     [Header("Defender XP")]
     [Tooltip("XP for the reaction's skill when the defender stops the attack.")]
     [Min(0f)] public float defenseSuccessXP = 6f;

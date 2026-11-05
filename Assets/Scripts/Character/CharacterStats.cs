@@ -169,10 +169,6 @@ public class CharacterStats : MonoBehaviour
 			StopAllCoroutines(); // e.g. sleeping
 			IsSleeping = false;
 			OnDied?.Invoke(source);
-
-			// After the OnDied listeners, so they can still use the NavMeshAgent etc.
-			if (Application.isPlaying && GetComponent<Corpse>() == null)
-				gameObject.AddComponent<Corpse>();
 		}
 	}
 

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Added by CharacterStats when an entity dies. Stops it moving and tips it over onto its side.
+/// Added by CombatActor when an entity dies. Stops it moving and tips it over onto its side.
 /// The body stays in the world; if it has an Inventory (its own, or one CorpseLoot made), it can
 /// be looted with a right-click.
 /// </summary>
@@ -14,6 +14,9 @@ public class Corpse : MonoBehaviour, IInteractable
     private const string LootActionId = "loot";
 
     private Inventory Loot => GetComponent<Inventory>();
+
+    /// <summary>A character wants to loot a body: (looter, the body's inventory, title). The inventory screen listens.</summary>
+    public static event System.Action<Character, Inventory, string> LootRequested;
 
     public string GetName() => $"{DisplayName()} (dead)";
 
@@ -28,7 +31,7 @@ public class Corpse : MonoBehaviour, IInteractable
     public void ExecuteInteraction(Character interactor, string actionId)
     {
         if (actionId == LootActionId && Loot != null)
-            InventoryScreen.Instance.OpenLoot(interactor, Loot, GetName());
+            LootRequested?.Invoke(interactor, Loot, GetName());
     }
 
     public Vector3 GetInteractionPoint() => transform.position;

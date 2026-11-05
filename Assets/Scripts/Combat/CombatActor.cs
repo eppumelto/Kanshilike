@@ -57,5 +57,16 @@ public abstract class CombatActor : MonoBehaviour, ICombatActor
 		stats = GetComponent<CharacterStats>();
 		skills = GetComponent<SkillSet>();
 		equipment = GetComponent<EquipmentManager>();
+
+		// Stats and this actor live and die together on one GameObject, so no unsubscribe is needed.
+		if (stats != null)
+			stats.OnDied += LeaveBody;
+	}
+
+	// The body stays in the world and can be looted (see Corpse).
+	private void LeaveBody(GameObject killer)
+	{
+		if (Application.isPlaying && GetComponent<Corpse>() == null)
+			gameObject.AddComponent<Corpse>();
 	}
 }

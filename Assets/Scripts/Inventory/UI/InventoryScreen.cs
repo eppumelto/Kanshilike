@@ -58,6 +58,19 @@ public class InventoryScreen : MonoBehaviour
 
 	public RectTransform WindowLayer => windowLayer;
 
+	// The screen is created on first use, so it listens for loot requests from the start of play.
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ListenForLoot()
+	{
+		Corpse.LootRequested -= OpenLootFor;
+		Corpse.LootRequested += OpenLootFor;
+	}
+
+	private static void OpenLootFor(Character looter, Inventory container, string title)
+	{
+		Instance.OpenLoot(looter, container, title);
+	}
+
 	private void Awake()
 	{
 		instance = this;

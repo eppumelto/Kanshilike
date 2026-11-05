@@ -31,7 +31,7 @@ play-tested.
 
 ## Project layout
 
-- `Assets/Scripts/` holds all game code. The main areas:
+- `Assets/Scripts/` holds all game code, compiled into the `Kanshilike.Game` assembly (`Rules/` is its own). The main areas:
   - `Character/`: `CharacterStats` (health, hunger, thirst, tiredness), `Character` (a person: carries, eats, defends itself, runs one order at a time), `Orders/` (`CharacterOrder` and its move, attack, interact, sleep and treat-wounds orders), `CharacterArchery`, corpses and corpse loot
   - `Rules/`: `CombatRules` and `HealingRules`, plain C# formulas in the `Kanshilike.Rules` assembly, tested in `Assets/Tests/EditMode/`
   - `Combat/`: `CombatActor` (base for `Character` and `AnimalAI`; owns the attack slot and the strike), `Faction`, exchange and formula resolution, attacker slots, facing; tuning lives in `Assets/Items/CombatFormulaConfig.asset`
@@ -41,7 +41,6 @@ play-tested.
   - `Selection/`: RTS selection, `PlayerControllable` (squad membership), `CharacterHud`, rings, squad bar
   - `Skills/`: `SkillType`, `SkillSet`, skill definitions and the panel
   - `TimeManager.cs`: the day cycle; it broadcasts `OnTimeChanged`, and needs tick hourly from it
-  - `Old/`: legacy random terrain and village generation; not in active use
 - `Assets/Items/`: item assets (Food, Drinks, Weapons, Shields, Headwears, Misc)
 - `Assets/Skills/Data/`: `SkillDefinition` assets
 - The scene in the build is `Assets/Scenes/test1.unity`.
@@ -60,6 +59,11 @@ play-tested.
 - Keep the indentation style of the file you are editing (most scripts use tabs).
 - Commit `.meta` files together with their assets. Never hand-edit GUIDs.
 - Gameplay logs go to the Unity Console (`Debug.Log`); keep them short and informative.
+
+## Building
+
+- Build for play-testers with **Kanshilike > Build Windows Demo**. It leaves out the Unity MCP
+  plugin, which a plain File > Build would include.
 
 ## Tooling
 
@@ -83,4 +87,4 @@ Compiling and running tests need a connected Unity Editor; without one, agents r
 
 - Work on a branch, open a PR, and merge into `main`.
 - One roadmap item (or a few small ones) per branch or PR keeps changes reviewable.
-- Run the EditMode tests before merging, and don't merge while any fail.
+- Run the EditMode and PlayMode tests before merging, and don't merge while any fail.

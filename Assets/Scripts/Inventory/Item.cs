@@ -22,6 +22,16 @@ public abstract class Item : ScriptableObject
 	[Tooltip("Weight of one item in kg. Counts toward the carrier's encumbrance.")]
 	[Min(0f)] public float weight = 1f;
 
+	/// <summary>
+	/// What happens when a character uses one of this item from their inventory (right-click, or
+	/// automatic eating and drinking). Returns false with a short reason when it can't be used.
+	/// </summary>
+	public virtual bool TryUse(Character user, Inventory.Entry entry, out string reason)
+	{
+		reason = $"Can't use {itemName}";
+		return false;
+	}
+
 	protected virtual void OnValidate()
 	{
 		size = Vector2Int.Max(size, Vector2Int.one);

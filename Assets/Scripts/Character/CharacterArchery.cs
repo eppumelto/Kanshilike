@@ -7,7 +7,6 @@ public static class CharacterArchery
 	private const float MaxShootingAngle = 15f;
 	private const float ArrowSpawnForward = 0.6f;
 	private const float ArrowSpawnUp = 0.3f;
-	private const float ArrowShotXP = 2f;
 	private const float DefaultBodyRadius = 0.5f;
 
 	// Shared by all archers: only used within a single check.
@@ -65,7 +64,7 @@ public static class CharacterArchery
 		projectile.Launch(velocity, attackProfile, archer.CombatConfig, archer.gameObject,
 			(defender, result) => archer.HandleArrowHit(defender, result, attackProfile.UsedWeaponSkill));
 
-		archer.Skills?.GainXP(attackProfile.UsedWeaponSkill, ArrowShotXP);
+		archer.Skills?.GainXP(attackProfile.UsedWeaponSkill, archer.CombatConfig.arrowShotXP);
 	}
 
 	private static Vector3 VelocityOf(Component target)
