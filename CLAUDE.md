@@ -67,6 +67,17 @@ play-tested.
   Cloud sessions have no Editor, so there you can only edit code and assets as text;
   play-testing has to happen locally.
 
+## Agent workflow
+
+`/feature <description>` runs a feature through the subagents in `.claude/agents/`, then stops for you to review and commit:
+
+1. `planner` writes `docs/plans/<feature>.md` and changes nothing else.
+2. `implementer` carries out that plan.
+3. `test-writer` adds and runs tests under `Assets/Tests/` only.
+4. `reviewer` checks the changes against `docs/architecture.md` without editing.
+
+Compiling and running tests need a connected Unity Editor; without one, agents report that work as not verified. Passing tests don't replace a play-test.
+
 ## Workflow
 
 - Work on a branch, open a PR, and merge into `main`.
