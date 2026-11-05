@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5614e535fde350342815946e0a388baa, type: 3}
+  m_Name: MossDressing
+  m_EditorClassIdentifier: Assembly-CSharp::HealingItem
+  itemName: Moss Dressing
+  icon: {fileID: 21300000, guid: e4c19cbd2c90361478a462df019bf06c, type: 3}
+  description: Dried bog moss bound with a strip of linen. Takes a moment to apply.
+  maxStack: 10
+  size: {x: 1, y: 1}
+  weight: 0.05
+  healAmount: 25
+  useSeconds: 4
+  progressLabel: Binding wounds...

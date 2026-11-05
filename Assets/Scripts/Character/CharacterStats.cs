@@ -21,6 +21,15 @@ public class CharacterStats : MonoBehaviour
 	[Min(0f)] public float starvationDamagePerHour = 3f;
 	[Min(0f)] public float dehydrationDamagePerHour = 5f;
 
+	[Header("Healing")]
+	[Tooltip("Regeneration rates. Leave empty for no regeneration (e.g. animals).")]
+	[SerializeField] private HealingConfig healingConfig;
+	public HealingConfig HealingConfig => healingConfig;
+
+	/// <summary>True from the start of a sleep until it ends, is interrupted, or the character dies.</summary>
+	public bool IsSleeping { get; private set; }
+	public event System.Action OnWokeUp;
+
 	// TODO: Replace with a real skill-based calculation once the skill system is implemented.
 	// Higher values = faster harvesting. E.g. a Foraging skill of 50 could give 1.5x speed.
 	public float HarvestSpeedMultiplier => 1.0f;
@@ -36,7 +45,11 @@ public class CharacterStats : MonoBehaviour
 	/// <summary>Someone swung at this entity, hit or not. Args: (attacker, blocked with a shield).</summary>
 	public event System.Action<GameObject, bool> OnAttacked;
 
-	public void NotifyAttacked(GameObject attacker, bool blockedWithShield) => OnAttacked?.Invoke(attacker, blockedWithShield);
+	public void NotifyAttacked(GameObject attacker, bool blockedWithShield)
+	{
+		WakeUp();
+		OnAttacked?.Invoke(attacker, blockedWithShield);
+	}
 
 	/// <summary>How much wounds have slowed this entity: 1 is unhurt. Animals move at this fraction of their speed.</summary>
 	public float WoundSpeedMultiplier { get; private set; } = 1f;
@@ -92,6 +105,20 @@ public class CharacterStats : MonoBehaviour
 		Debug.Log($"{name} -> H:{hunger} T:{thirst} Td:{tiredness}");
 
 		ApplyStarvation();
+		ApplyRegeneration();
+	}
+
+	// Natural and sleep healing, once per in-game hour. Does nothing without a HealingConfig.
+	void ApplyRegeneration()
+	{
+		if (healingConfig == null || !IsAlive)
+			return;
+
+		float rate = HealingRules.RegenPerHour(IsSleeping, IsStarving, IsDehydrated,
+			healingConfig.naturalRegenPerHour, healingConfig.sleepRegenPerHour);
+		float gained = Heal(rate);
+		if (gained > 0f)
+			Debug.Log($"{name} healed {gained:F0} HP ({currentHealth:F0}/{maxHealth:F0})");
 	}
 
 	// Empty hunger/thirst bars hurt every hour until the character eats/drinks or dies.
@@ -124,6 +151,7 @@ public class CharacterStats : MonoBehaviour
 	{
 		StopAllCoroutines();
 		StartCoroutine(SleepRoutine(sleepHours));
+		IsSleeping = true;
 	}
 
 	public void ReceiveDamage(float amount, GameObject source = null)
@@ -140,6 +168,7 @@ public class CharacterStats : MonoBehaviour
 		{
 			Debug.Log($"{name} died.");
 			StopAllCoroutines(); // e.g. sleeping
+			IsSleeping = false;
 			OnDied?.Invoke(source);
 
 			// After the OnDied listeners, so they can still use the NavMeshAgent etc.
@@ -148,12 +177,26 @@ public class CharacterStats : MonoBehaviour
 		}
 	}
 
-	public void Heal(float amount)
+	/// <summary>Restores health and returns how much was actually gained.</summary>
+	public float Heal(float amount)
 	{
-		if (amount <= 0f || !IsAlive)
+		float gained = HealingRules.HealthGained(currentHealth, maxHealth, amount);
+		if (gained <= 0f)
+			return 0f;
+
+		currentHealth = Mathf.Min(maxHealth, currentHealth + gained);
+		return gained;
+	}
+
+	/// <summary>Ends a sleep early (or at its end). The hours already slept are kept.</summary>
+	public void WakeUp()
+	{
+		if (!IsSleeping)
 			return;
 
-		currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+		StopAllCoroutines();
+		IsSleeping = false;
+		OnWokeUp?.Invoke();
 	}
 
 	private IEnumerator SleepRoutine(float sleepHours)
@@ -185,5 +228,6 @@ public class CharacterStats : MonoBehaviour
 		}
 
 		Debug.Log($"{name} woke up after {sleepHours}h sleep � final tiredness {tiredness}");
+		WakeUp();
 	}
 }

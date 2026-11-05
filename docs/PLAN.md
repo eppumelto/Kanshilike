@@ -79,7 +79,7 @@ needed yet**.
 | Survival kept as it is now, plus healing and campfire resting | Warmth, cooking, bleeding, encumbrance, injuries |
 
 ### Tasks (in order)
-- [ ] Healing and regeneration (survival item 1); the demo needs wounds to heal between fights
+- [x] Healing and regeneration (survival item 1); the demo needs wounds to heal between fights ([plan](plans/healing-regeneration.md))
 - [ ] Human NPC base: villager and guard prefabs, reusing the combat and navigation of the wolf AI
 - [ ] Demo map: two villages with houses, a smithy, a hut where the daughter is held
 - [ ] Families and villages as data, with relation scores and a deed log (in memory)
@@ -109,11 +109,12 @@ version of items 3–4) is needed for the demo. Each item notes where the work g
 
 ### 1. Healing and regeneration
 `CharacterStats.Heal()` is never called, so every wound is permanent.
-- [ ] Slow natural regeneration per in-game hour, only while not starving or dehydrated
-- [ ] Faster regeneration while sleeping (hook into `SleepRoutine`)
-- [ ] Bandage / first-aid item that heals over a short timed action
-- [ ] First Aid skill (next free `SkillType` number, plus a `SkillDefinition` asset) that speeds healing and makes it stronger
-- [ ] Optional: downed instead of dead at 0 HP (Kenshi-style knockout); only killed if damage continues
+Design: [plans/healing-regeneration.md](plans/healing-regeneration.md). Rates live in `HealingConfig` (`Assets/Items/HealingConfig.asset`); the item is a Moss Dressing, gathered from Bog Moss patches; treatment is self-only. Implemented and compiled; the play-test is still to do.
+- [x] Slow natural regeneration per in-game hour, only while not starving or dehydrated
+- [x] Faster regeneration while sleeping (hook into `SleepRoutine`)
+- [x] Bandage / first-aid item that heals over a short timed action
+- [x] First Aid skill (next free `SkillType` number, plus a `SkillDefinition` asset) that speeds healing and makes it stronger
+- [ ] Optional: downed instead of dead at 0 HP (Kenshi-style knockout); only killed if damage continues (deferred: not in the demo, decide after the verdict)
 
 ### 2. Make tiredness matter
 Tiredness rises and sleeping lowers it, but nothing reads the value.
@@ -322,8 +323,12 @@ neutral, friendly (better prices, help in fights), loyal (can be recruited).
 - [ ] Difficulty settings that scale survival rates (design pillar 5)
 - [ ] Saving and loading the game (required for the world to remember deeds; see Feuds)
 - [ ] Clean up or remove `Assets/Scripts/Old/`
+- [ ] Treat another squad member (needs the interaction menu)
+- [ ] Show First Aid and other missing skills in `SkillsPanel`
 
 ## Known issues
 
 - Mixed indentation (tabs and spaces) across scripts
+- Hunger and thirst tick twice during sleep (`UpdateStats` and `SleepRoutine`)
+- `CLAUDE.md` and `SkillType.cs` say skill assets go in `Assets/Skills/Data/`, but they are in `Assets/Skills/`
 - [x] Picking up weapons or objects (`Collect`) must never give Harvesting XP. Harvesting, such as picking berries (`Harvest`), keeps its XP.
