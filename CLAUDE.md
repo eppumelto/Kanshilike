@@ -82,3 +82,4 @@ Compiling and running tests need a connected Unity Editor; without one, agents r
 
 - Work on a branch, open a PR, and merge into `main`.
 - One roadmap item (or a few small ones) per branch or PR keeps changes reviewable.
+- Run the EditMode tests before merging, and don't merge while any fail.

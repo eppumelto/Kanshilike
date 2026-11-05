@@ -13,15 +13,10 @@ Review `git diff main...HEAD` plus uncommitted and untracked work from `git stat
 
 ## Check against docs/architecture.md
 
-- **Strengths kept:** static formulas tuned through `CombatFormulaConfig` and shared through `ICombatActor`; asset-driven content; `InventoryActions` kept apart from UI, with each move completing or changing nothing; `PlayerControllable.All` and `Joined` instead of scene searches; text-serialized scenes and prefabs.
-- **Findings not made worse:**
-  1. A single `AttackTarget(CombatActor)` path, not more separate attack paths.
-  2. One current-order object, not more special cases or `StopAllCoroutines` conflicts in `Character`.
-  3. Hostility decided by relations, not by extending the `Faction` rule.
-  4. Interaction choice, not more `options[0]` assumptions.
-  5. Combined speed multipliers, not more direct `agent.speed` writes.
+- **Strengths kept:** nothing under "What works well" is undermined.
+- **Findings not made worse:** go through every numbered finding and check the change doesn't add to it.
 - **Order:** whether the work respects the recommended order, or says why it does not.
-- **Smaller risks:** growth in `Character`, game logic tied to UI, hardcoded tuning such as XP.
+- **Smaller risks:** whether the change adds to any listed risk.
 
 The review is dated, so check each finding against the current code. If the change makes part of it out of date, say so.
 

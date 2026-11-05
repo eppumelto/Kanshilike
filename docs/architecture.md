@@ -1,12 +1,14 @@
 # Architecture review
 
-Reviewed 2026-11-05, on `main` at `816dbe6`, against the vertical slice demo in
-[`PLAN.md`](PLAN.md). The review read the code and the scene and prefab data; the game was
-not run. Check findings against the code before acting on them, as it may have moved on.
+Reviewed 2026-11-05, on `main` at `5a5ab79`, against the vertical slice demo in
+[`PLAN.md`](PLAN.md). This pass read the code and the scene and prefab data, ran the EditMode
+tests and checked the open scene in Unity; the game was not played. Check findings against the
+code before acting on them, as it may have moved on.
 
-**Summary:** the structure is in good shape for its size (about 6,400 lines), but it isn't
-ready for human NPCs yet. Five gaps block demo tasks, and the first two should be fixed
-before the "Human NPC base" task starts.
+**Summary:** healing, the first tests and the agent workflow landed well, and the structure is
+in good shape for its size (about 6,600 lines). It still isn't ready for human NPCs. Six gaps
+block demo tasks, and findings 1, 2 and 6 should be fixed as part of reaching the "Human NPC
+base" task.
 
 ## Current structure
 
@@ -19,15 +21,17 @@ AnimalAI ───────────> CombatExchangeResolver ──> Chara
 
 InventoryScreen (UI) ──> InventoryActions ──> Inventory
 CharacterHud, SelectionHud ──> SelectionManager
+CharacterStats, Character ──> HealingRules (plain C#, Kanshilike.Healing assembly)
 ```
 
 | Class | Job |
 |---|---|
 | `CombatActor` | Base class for anything that fights: `Character` and `AnimalAI` |
-| `Character` | A person: walking, fighting, carrying, eating, carrying out orders |
+| `Character` | A person: walking, fighting, carrying, eating, treating wounds, carrying out orders |
 | `PlayerControllable` | Squad membership: selection, ring and the live squad list |
 | `CharacterHud` | Status bars and skills panel; shows the primary selected character |
 | `AnimalAI` | State machine for wolves and deer; personality assets decide predator or prey |
+| `HealingRules` | Healing formulas with no Unity dependency, so they can be tested alone |
 | `Faction` | `Player` or `Wildlife`; a placeholder, see finding 3 |
 
 ## What works well
@@ -36,18 +40,21 @@ Keep these when changing the code around them.
 
 - **Combat rules:** formulas are static, tuned through `CombatFormulaConfig`, and shared by
   melee, arrows and animals through `ICombatActor`.
-- **Data:** items, skills and animal personalities are assets, so new content rarely needs
-  new code.
+- **Data:** items, skills, animal personalities and healing rates are assets, so new content
+  rarely needs new code.
 - **Inventory:** `InventoryActions` is kept apart from the UI, and each move either
   completes or changes nothing.
 - **Squad list:** `PlayerControllable.All` and `Joined` replace scene searches, so members
   added during play reach the selection list, squad bar and game-over check. Nothing has
   used this yet, so adding a member during play is untested.
+- **Pure rules:** `HealingRules` is plain C# in its own assembly with fast tests. `Relations`
+  and the deed log should follow this pattern.
+- **Workflow:** `/feature` and `docs/plans/` give each feature a design and review trail.
 - **Unity settings:** scenes and prefabs are saved as text, so they can be diffed.
 
 ## Findings that block the demo
 
-Listed in the order the plan's tasks reach them.
+Numbers stay stable so plans can refer to them.
 
 ### 1. Humans can't fight humans
 
@@ -72,13 +79,15 @@ become just one way to call it. Add self-defence in the same change.
 
 Actions are coroutines cancelled by `StopAllCoroutines`, and the only orders are move,
 interact and attack. The demo needs follow (the freed daughter, recruits), hold a post, sleep
-and alarm. Built separately, each adds more special cases to `Character`, and anything else
-using a coroutine there gets cancelled too.
+and alarm. Healing has already added to this: `Character` now tracks `combatLoopRoutine` and
+`treatmentRoutine`, while sleep lives in `CharacterStats` with its own label callback. Each is
+wired into `CancelCurrentAction` and `HandleAttacked` by hand. The code looks correct, but every
+new action built this way adds more special cases.
 
 **Fix:** give `Character` one current-order object, with a small `NpcBrain` component that
-issues orders the same way the player does. `NpcBrain` can share `AnimalPerceptionUtility`,
-but that currently takes an `AnimalPersonality`, so move the vision settings to their own
-small type.
+issues orders the same way the player does. Move treatment and sleep onto it in the same change.
+`NpcBrain` can share `AnimalPerceptionUtility`, but that currently takes an `AnimalPersonality`,
+so move the vision settings to their own small type.
 
 ### 3. Hostility can't express relations
 
@@ -120,18 +129,31 @@ no effect on humans.
 **Fix:** add one small function that combines speed multipliers, along with a crouch state that
 guard perception can read.
 
+### 6. There is no character prefab
+
+**Blocks:** Human NPC base, force path.
+
+`Character` exists only on scene objects in `test1` and `Iides_map`, with no prefab anywhere.
+Villagers, guards and recruits all need one, and their settings (skills, healing config, combat
+config) are currently set by hand on each object.
+
+**Fix:** turn a squad member into a `Character` prefab early in the Human NPC task. The HUD has
+already moved out of `Character`, so nothing scene-only should be needed on it.
+
 ## Smaller risks
 
 - **Dev tooling in demo builds:** `Assets/Plugins/NuGet/McpPlugin.dll.meta` enables the DLL for
   all platforms, and the MCP runtime assembly definition excludes none. MCP and its networking
   DLLs (45 DLLs, 19 MB) may ship in player builds. This has not been confirmed with a real
   build. Do a test build before the first play-test.
-- **No tests:** there are no tests, assembly definitions or namespaces. A test assembly with its
-  own asmdef can't reference `Assembly-CSharp`, so asmdefs have to come first. Start with
-  `Relations` and the deed log as plain C# in one small assembly, since that's the logic the demo
-  depends on and it needs no scene.
-- **`Character` is still large:** at 704 lines, most of it is combat and archery. Findings 1 and 2
-  are the natural time to move that out.
+- **Combat isn't testable yet:** the test assembly can't reference `Assembly-CSharp`, where
+  `Character` and `CombatFormulaResolver` live, so the wiring tests search scene and source files
+  as text. Move the combat formulas into a rules assembly before the shared attack work, and make
+  it a single `Kanshilike.Rules` assembly rather than adding one per feature.
+- **`Character` is still growing:** it is 805 lines, up from 704 before healing. Most of it is
+  combat, archery and action handling, and findings 1 and 2 are the natural time to move that out.
+- **Item use is spread out:** `TryConsume`, `TryTreatWounds` and `InventoryWindow` each check item
+  types separately, so every usable item adds another branch.
 - **Game logic tied to UI:** `CharacterStats` creates the corpse, and `Corpse` opens the inventory
   screen directly.
 - **Combat events:** `OnAttackWindup` and the related events have no subscribers, only `Character`
@@ -139,10 +161,7 @@ guard perception can read.
   animation will mean separating "resolve" from "apply".
 - **Hardcoded XP:** attacker XP is written into `Character`, while defender XP lives in the config.
 - **Repo housekeeping:**
-  - Git tracks `Assets/Scripts/Inventory`, but the folder on disk is `inventory`.
   - There is no `.gitattributes`.
-  - `.claude/skills` files show as modified after each session.
-  - Bows and deer aren't listed in `PLAN.md`.
   - `Old/` still compiles, and only `SampleScene` uses it.
 
 ## Deliberately left for later
@@ -157,12 +176,12 @@ None of these affect whether the feud idea is fun, so they can wait until the de
 
 ## Recommended order
 
-1. **Combat and orders:** `AttackTarget`, the current-order object and self-defence, as one change.
-   Test it with one hostile human NPC in `test1` before building on it.
-2. **`NpcBrain` and shared vision settings:** this is the plan's "Human NPC base" task.
-3. **Identity, `Relations` and the deed log:** with tests, replacing the `Faction` rule.
-4. **Interaction menu:** with hover info for relations.
-5. **Speed modifiers and crouch:** when stealth work starts.
-6. **Test build:** check for MCP before the first play-test.
-
-Healing comes first in the plan and doesn't depend on any of this, so it can go ahead at any time.
+1. **Rules assembly:** move the combat formulas in and add tests, as a safety net for step 2.
+2. **Shared attack and orders:** `AttackTarget`, the current-order object and self-defence, as one
+   change, with treatment and sleep moved onto orders. Test it with one hostile human NPC in `test1`
+   before building on it.
+3. **Human NPC base:** the `Character` prefab, `NpcBrain` and shared vision settings.
+4. **Identity, `Relations` and the deed log:** with tests, replacing the `Faction` rule.
+5. **Interaction menu:** with hover info for relations.
+6. **Speed modifiers and crouch:** when stealth work starts.
+7. **Test build:** check for MCP before the first play-test.
