@@ -59,7 +59,6 @@ public class AnimalAI : CombatActor, INaturalAttacker
     /// <summary>The group this predator belongs to. Null for one placed by hand in a scene.</summary>
     private AnimalGroup group;
 
-    private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
     private float nextAttackTime;
 
     public override Faction Faction => faction;
@@ -339,7 +338,6 @@ public class AnimalAI : CombatActor, INaturalAttacker
             agent,
             personality,
             combatFormulaConfig,
-            reservedTargetSlot,
             threat,
             threatCharacter,
             ref nextAttackTime);
@@ -464,7 +462,7 @@ public class AnimalAI : CombatActor, INaturalAttacker
 
     private void ReleaseCombatSlot()
     {
-        reservedTargetSlot.Release(gameObject);
+        ReleaseAttackSlot();
     }
 
     // ------------------------------------------------------------------ //

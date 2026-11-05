@@ -37,7 +37,7 @@ public static class CombatExchangeResolver
         onReactionDecided?.Invoke(reaction);
 
         float defenseRating = CombatFormulaResolver.GetDefenseRating(defender, reaction, config, coveringShield);
-        bool defended = Random.value < CombatFormulaResolver.GetDefenseChance(defenseRating, attack.AttackRating);
+        bool defended = Random.value < CombatRules.DefenseChance(defenseRating, attack.AttackRating);
         bool hitLanded = !defended;
         float counterDamage = 0f;
 
@@ -51,7 +51,7 @@ public static class CombatExchangeResolver
         {
             // The defender's counter uses its own attack (weapon, bite or fists).
             AttackProfile counterAttack = CombatFormulaResolver.BuildAttackProfile(defender, config);
-            counterDamage = Mathf.Max(1f, counterAttack.Damage * config.counterDamageFraction);
+            counterDamage = CombatRules.CounterDamage(counterAttack.Damage, config.counterDamageFraction);
             attacker.Stats?.ReceiveDamage(counterDamage, defender.ActorTransform != null ? defender.ActorTransform.gameObject : null);
         }
 
@@ -68,7 +68,7 @@ public static class CombatExchangeResolver
             // A failed block with a shield in the way still takes the edge off the hit.
             float damage = attack.Damage;
             if (reaction == CombatReactionType.Block && coveringShield != null)
-                damage *= 1f - coveringShield.failedBlockDamageReduction;
+                damage = CombatRules.FailedBlockDamage(damage, coveringShield.failedBlockDamageReduction);
 
             defenderStats.ReceiveDamage(damage, source);
             return new CombatExchangeResult(reaction, true, damage, counterDamage);
@@ -96,7 +96,7 @@ public static class CombatExchangeResolver
         float blockRating = coveringShield != null ? CombatFormulaResolver.GetBlockRating(defender, config, coveringShield) : 0f;
         CombatReactionType reaction = blockRating > 0f ? CombatReactionType.Block : CombatReactionType.None;
         bool blocked = reaction == CombatReactionType.Block
-            && Random.value < CombatFormulaResolver.GetDefenseChance(blockRating, attack.AttackRating);
+            && Random.value < CombatRules.DefenseChance(blockRating, attack.AttackRating);
 
         defenderStats.NotifyAttacked(shooter, blocked);
 
@@ -108,7 +108,7 @@ public static class CombatExchangeResolver
 
         float damage = attack.Damage;
         if (reaction == CombatReactionType.Block)
-            damage *= 1f - coveringShield.failedBlockDamageReduction;
+            damage = CombatRules.FailedBlockDamage(damage, coveringShield.failedBlockDamageReduction);
 
         // Wound first, so anything reacting to the damage already moves at the slowed speed.
         defenderStats.Wound(config.arrowWoundSpeedMultiplier, config.minWoundSpeedMultiplier);

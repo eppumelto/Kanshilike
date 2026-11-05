@@ -1,45 +1,50 @@
 # Architecture review
 
 Reviewed 2026-11-05, on `main` at `5a5ab79`, against the vertical slice demo in
-[`PLAN.md`](PLAN.md). This pass read the code and the scene and prefab data, ran the EditMode
-tests and checked the open scene in Unity; the game was not played. Check findings against the
-code before acting on them, as it may have moved on.
+[`PLAN.md`](PLAN.md), and updated the same day after the shared attack and orders work, which
+resolved findings 1 and 2. Check findings against the code before acting on them, as it may
+have moved on.
 
-**Summary:** healing, the first tests and the agent workflow landed well, and the structure is
-in good shape for its size (about 6,600 lines). It still isn't ready for human NPCs. Six gaps
-block demo tasks, and findings 1, 2 and 6 should be fixed as part of reaching the "Human NPC
-base" task.
+**Summary:** people and animals now share one attack path, characters run one order at a time
+and defend themselves, and the combat maths is tested. Four gaps still block demo tasks, plus the
+NPC-side half of finding 2. Finding 6 (no character prefab) comes first, as part of the "Human
+NPC base" task.
 
 ## Current structure
 
 ```
-SelectionManager ──> PlayerControllable ──> Character ──> IInteractable
-                                               │          (Generic / Combat / Corpse)
+SelectionManager ──> PlayerControllable ──> Character ──> CharacterOrder (one at a time:
+                                               │          Move, Attack, Interact, Sleep, TreatWounds)
                                                ▼
-AnimalAI ───────────> CombatExchangeResolver ──> CharacterStats, SkillSet, EquipmentManager
- (FSM + static helpers)    └─ CombatFormulaResolver + CombatFormulaConfig
+Character, AnimalAI ──> CombatActor.ResolveStrike ──> CombatExchangeResolver
+                                                        └─ CombatFormulaResolver ──> CombatRules
 
 InventoryScreen (UI) ──> InventoryActions ──> Inventory
 CharacterHud, SelectionHud ──> SelectionManager
-CharacterStats, Character ──> HealingRules (plain C#, Kanshilike.Healing assembly)
+CombatRules, HealingRules: plain C# in the Kanshilike.Rules assembly, covered by EditMode tests
 ```
 
 | Class | Job |
 |---|---|
-| `CombatActor` | Base class for anything that fights: `Character` and `AnimalAI` |
-| `Character` | A person: walking, fighting, carrying, eating, treating wounds, carrying out orders |
+| `CombatActor` | Base class for anything that fights: `Character` and `AnimalAI`; owns the attack slot and the strike |
+| `Character` | A person: carrying, eating, defending itself, and running one `CharacterOrder` at a time |
+| `CharacterOrder` | What a character is doing: `MoveOrder`, `AttackOrder`, `InteractOrder`, `SleepOrder`, `TreatWoundsOrder` |
+| `CharacterArchery` | Aiming and shooting for characters with a bow |
 | `PlayerControllable` | Squad membership: selection, ring and the live squad list |
 | `CharacterHud` | Status bars and skills panel; shows the primary selected character |
 | `AnimalAI` | State machine for wolves and deer; personality assets decide predator or prey |
-| `HealingRules` | Healing formulas with no Unity dependency, so they can be tested alone |
+| `CombatRules`, `HealingRules` | Combat and healing formulas with no Unity dependency, so they can be tested alone |
 | `Faction` | `Player` or `Wildlife`; a placeholder, see finding 3 |
 
 ## What works well
 
 Keep these when changing the code around them.
 
-- **Combat rules:** formulas are static, tuned through `CombatFormulaConfig`, and shared by
-  melee, arrows and animals through `ICombatActor`.
+- **Combat rules:** formulas live in `CombatRules`, are tuned through `CombatFormulaConfig`, and are
+  shared by melee, arrows and animals. Every melee strike goes through `CombatActor.ResolveStrike`.
+- **Orders:** `Character.GiveOrder` ends the current order before starting the next, and each order
+  tidies up in `End`. New behaviour (follow, hold post, alarm) should be a new `CharacterOrder`, and
+  NPC brains should give orders the same way the player does.
 - **Data:** items, skills, animal personalities and healing rates are assets, so new content
   rarely needs new code.
 - **Inventory:** `InventoryActions` is kept apart from the UI, and each move either
@@ -47,8 +52,8 @@ Keep these when changing the code around them.
 - **Squad list:** `PlayerControllable.All` and `Joined` replace scene searches, so members
   added during play reach the selection list, squad bar and game-over check. Nothing has
   used this yet, so adding a member during play is untested.
-- **Pure rules:** `HealingRules` is plain C# in its own assembly with fast tests. `Relations`
-  and the deed log should follow this pattern.
+- **Pure rules:** `CombatRules` and `HealingRules` are plain C# in `Kanshilike.Rules` with fast
+  tests. `Relations` and the deed log should go in the same assembly.
 - **Workflow:** `/feature` and `docs/plans/` give each feature a design and review trail.
 - **Unity settings:** scenes and prefabs are saved as text, so they can be diffed.
 
@@ -56,9 +61,14 @@ Keep these when changing the code around them.
 
 Numbers stay stable so plans can refer to them.
 
-### 1. Humans can't fight humans
+### 1. Humans can't fight humans (resolved)
 
-**Blocks:** Human NPC base.
+Resolved by the shared attack and orders work: `Character.AttackTarget(CombatActor)` starts every
+fight, people and animals strike through `CombatActor.ResolveStrike` and its attack slot, and a
+character attacked by a hostile actor fights back unless it is walking away or already fighting.
+It was play-tested with a hostile human copy of a squad member. Kept below for the record.
+
+**Blocked:** Human NPC base.
 
 `Character.Attack` takes an `IInteractable`, and only the wolf in `test1` has
 `CombatEntityInteractable`. The squad has no `IInteractable`, so a guard can't attack them
@@ -73,7 +83,11 @@ same way.
 **Fix:** add an `AttackTarget(CombatActor)` method used by players and AI alike. Interactions
 become just one way to call it. Add self-defence in the same change.
 
-### 2. Nothing can give a human NPC ongoing orders
+### 2. Nothing can give a human NPC ongoing orders (partly resolved)
+
+The order mechanism is done: `Character` runs one `CharacterOrder` at a time, and treatment and
+sleep are orders now. Still to do, in the Human NPC task: `NpcBrain`, the follow and hold-post
+orders, and vision settings that don't need an `AnimalPersonality`. Kept below for the record.
 
 **Blocks:** Human NPC base, prisoner, force path.
 
@@ -146,12 +160,11 @@ already moved out of `Character`, so nothing scene-only should be needed on it.
   all platforms, and the MCP runtime assembly definition excludes none. MCP and its networking
   DLLs (45 DLLs, 19 MB) may ship in player builds. This has not been confirmed with a real
   build. Do a test build before the first play-test.
-- **Combat isn't testable yet:** the test assembly can't reference `Assembly-CSharp`, where
-  `Character` and `CombatFormulaResolver` live, so the wiring tests search scene and source files
-  as text. Move the combat formulas into a rules assembly before the shared attack work, and make
-  it a single `Kanshilike.Rules` assembly rather than adding one per feature.
-- **`Character` is still growing:** it is 805 lines, up from 704 before healing. Most of it is
-  combat, archery and action handling, and findings 1 and 2 are the natural time to move that out.
+- **Behaviour isn't testable yet:** the combat maths is tested now, but the test assembly still
+  can't reference `Assembly-CSharp`, so orders and self-defence can only be checked in Play mode,
+  and the wiring tests search scene and source files as text.
+- **`Character` size:** down to 562 lines from 805, with orders and archery in their own files.
+  Keep new behaviour in orders rather than adding it back.
 - **Item use is spread out:** `TryConsume`, `TryTreatWounds` and `InventoryWindow` each check item
   types separately, so every usable item adds another branch.
 - **Game logic tied to UI:** `CharacterStats` creates the corpse, and `Corpse` opens the inventory
@@ -176,12 +189,10 @@ None of these affect whether the feud idea is fun, so they can wait until the de
 
 ## Recommended order
 
-1. **Rules assembly:** move the combat formulas in and add tests, as a safety net for step 2.
-2. **Shared attack and orders:** `AttackTarget`, the current-order object and self-defence, as one
-   change, with treatment and sleep moved onto orders. Test it with one hostile human NPC in `test1`
-   before building on it.
-3. **Human NPC base:** the `Character` prefab, `NpcBrain` and shared vision settings.
-4. **Identity, `Relations` and the deed log:** with tests, replacing the `Faction` rule.
-5. **Interaction menu:** with hover info for relations.
-6. **Speed modifiers and crouch:** when stealth work starts.
-7. **Test build:** check for MCP before the first play-test.
+1. **Human NPC base:** the `Character` prefab, `NpcBrain`, follow and hold-post orders, and shared
+   vision settings.
+2. **Identity, `Relations` and the deed log:** in `Kanshilike.Rules` with tests, replacing the
+   `Faction` rule.
+3. **Interaction menu:** with hover info for relations.
+4. **Speed modifiers and crouch:** when stealth work starts.
+5. **Test build:** check for MCP before the first play-test.

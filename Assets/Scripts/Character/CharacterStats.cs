@@ -28,7 +28,6 @@ public class CharacterStats : MonoBehaviour
 
 	/// <summary>True from the start of a sleep until it ends, is interrupted, or the character dies.</summary>
 	public bool IsSleeping { get; private set; }
-	public event System.Action OnWokeUp;
 
 	// TODO: Replace with a real skill-based calculation once the skill system is implemented.
 	// Higher values = faster harvesting. E.g. a Foraging skill of 50 could give 1.5x speed.
@@ -196,7 +195,6 @@ public class CharacterStats : MonoBehaviour
 
 		StopAllCoroutines();
 		IsSleeping = false;
-		OnWokeUp?.Invoke();
 	}
 
 	private IEnumerator SleepRoutine(float sleepHours)

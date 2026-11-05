@@ -32,8 +32,9 @@ play-tested.
 ## Project layout
 
 - `Assets/Scripts/` holds all game code. The main areas:
-  - `Character/`: `CharacterStats` (health, hunger, thirst, tiredness), `Character` (a person: fights, carries, follows orders), corpses and corpse loot
-  - `Combat/`: `CombatActor` (base for `Character` and `AnimalAI`), `Faction`, exchange and formula resolution, attacker slots, facing; tuning lives in `Assets/Items/CombatFormulaConfig.asset`
+  - `Character/`: `CharacterStats` (health, hunger, thirst, tiredness), `Character` (a person: carries, eats, defends itself, runs one order at a time), `Orders/` (`CharacterOrder` and its move, attack, interact, sleep and treat-wounds orders), `CharacterArchery`, corpses and corpse loot
+  - `Rules/`: `CombatRules` and `HealingRules`, plain C# formulas in the `Kanshilike.Rules` assembly, tested in `Assets/Tests/EditMode/`
+  - `Combat/`: `CombatActor` (base for `Character` and `AnimalAI`; owns the attack slot and the strike), `Faction`, exchange and formula resolution, attacker slots, facing; tuning lives in `Assets/Items/CombatFormulaConfig.asset`
   - `Inventory/`: grid inventory, item types (`Item` ScriptableObjects), equipment, `Inventory/UI/`
   - `Interaction/`: `GenericInteractable` (Drink, Eat, Sleep, Collect, Harvest, Attack)
   - `NPC/Animals/`: `AnimalAI` for wolves and deer (perception, aggro memory, chase and combat), groups, spawning

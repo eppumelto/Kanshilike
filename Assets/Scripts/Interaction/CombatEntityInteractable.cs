@@ -39,7 +39,9 @@ public class CombatEntityInteractable : MonoBehaviour, IInteractable
         if (interactor == null || actionId != attackActionId)
             return;
 
-        interactor.Attack(this);
+        CombatActor actor = GetComponentInParent<CombatActor>();
+        if (actor != null)
+            interactor.AttackTarget(actor);
     }
 
     public Vector3 GetInteractionPoint()

@@ -10,12 +10,11 @@ public enum AnimalChaseStepResult
 public static class AnimalChaseCombatExecutor
 {
     public static AnimalChaseStepResult Execute(
-        ICombatActor attacker,
+        CombatActor attacker,
         GameObject attackerObject,
         NavMeshAgent agent,
         AnimalPersonality personality,
         CombatFormulaConfig combatFormulaConfig,
-        CombatSlotReservation reservedTargetSlot,
         Transform detectedTarget,
         CombatActor detectedCharacter,
         ref float nextAttackTime)
@@ -34,7 +33,7 @@ public static class AnimalChaseCombatExecutor
             return AnimalChaseStepResult.Continue;
         }
 
-        if (!reservedTargetSlot.TryReserve(attackerObject, detectedCharacter))
+        if (!attacker.TryTakeAttackSlot(detectedCharacter))
         {
             // Queue full: keep pressure while waiting for an active slot.
             agent.SetDestination(detectedTarget.position);
@@ -53,13 +52,7 @@ public static class AnimalChaseCombatExecutor
         if (Time.time < nextAttackTime)
             return AnimalChaseStepResult.Continue;
 
-        CombatExchangeResult result = CombatExchangeResolver.ResolveAndApply(
-            attack,
-            attacker,
-            detectedCharacter,
-            detectedCharacter.Stats,
-            combatFormulaConfig,
-            attackerObject);
+        CombatExchangeResult result = attacker.ResolveStrike(detectedCharacter, attack, combatFormulaConfig);
 
         Debug.Log(
             $"[Combat] {attackerObject.name} attacked {detectedTarget.name}: " +
