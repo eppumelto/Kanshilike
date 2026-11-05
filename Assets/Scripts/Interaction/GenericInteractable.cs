@@ -31,6 +31,9 @@ public class InteractionEntry
 	[Tooltip("Item added to inventory when actionType is Collect or Harvest.")]
 	public Item item;
 
+	[Tooltip("Collect only: how many of the item this pick-up holds, e.g. a bundle of arrows.")]
+	[Min(1)] public int collectCount = 1;
+
 	[Tooltip("Drink only: also refills the drinker's empty containers of this drink (e.g. a well filling empty waterskins).")]
 	public DrinkItem refills;
 
@@ -118,11 +121,20 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 				interactor.Sleep();
 				break;
 			case InteractionActionType.Collect:
-				if (!interactor.collectItem(entry.item))
+			{
+				int total = Mathf.Max(1, entry.collectCount);
+				int taken = interactor.CollectItems(entry.item, total);
+				if (taken <= 0)
 					return; // no room: leave the object where it is
+				if (taken < total)
+				{
+					entry.collectCount = total - taken; // the rest stays on the ground
+					return;
+				}
 				consumed = true;
 				Destroy(gameObject);
 				return; // object destroyed, skip use decrement
+			}
 			case InteractionActionType.Attack:
 				interactor.Attack(this);
 				break;

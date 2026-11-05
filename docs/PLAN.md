@@ -47,6 +47,7 @@ a source of flavour, not a rule to follow everywhere. Check every new mechanic a
 - [x] Food and drink, automatic eating and drinking, refillable waterskins
 - [x] Interactions: Drink, Eat, Sleep, Collect, Harvest, Attack
 - [x] Every wolf attack logged to the Unity Console
+- [x] Bows and arrows
 
 ## Current milestone: vertical slice demo
 
@@ -325,3 +326,4 @@ neutral, friendly (better prices, help in fights), loyal (can be recruited).
 ## Known issues
 
 - Mixed indentation (tabs and spaces) across scripts
+- [x] Picking up weapons or objects (`Collect`) must never give Harvesting XP. Harvesting, such as picking berries (`Harvest`), keeps its XP.
