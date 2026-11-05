@@ -31,3 +31,5 @@ MonoBehaviour:
   masterSpread: 0.75
   movingTargetSpread: 1
   movingTargetSpeed: 5
+  minHitChance: 0.15
+  maxPursuitDistance: 45

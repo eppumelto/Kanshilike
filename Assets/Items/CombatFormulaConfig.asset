@@ -41,3 +41,7 @@ MonoBehaviour:
   counterWeight: 0.6
   defenseSuccessXP: 6
   defenseFailXP: 2
+  aimSkill: 5
+  aimSkillShare: 0.25
+  arrowWoundSpeedMultiplier: 0.4
+  minWoundSpeedMultiplier: 0.2

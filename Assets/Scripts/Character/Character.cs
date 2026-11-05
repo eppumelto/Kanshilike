@@ -592,24 +592,41 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		reservedTargetSlot.Release(gameObject);
 	}
 
-	/// <summary>Puts the item in this character's inventory. Returns false if it did not fit.</summary>
+	/// <summary>
+	/// Harvests one item into this character's inventory and grants Harvesting XP. Returns false
+	/// if it did not fit.
+	/// </summary>
 	public bool collectItem(Item item, float harvestXP = 15f)
+	{
+		if (CollectItems(item, 1) <= 0)
+			return false;
+
+		skills?.GainXP(SkillType.Harvesting, harvestXP);
+		return true;
+	}
+
+	/// <summary>
+	/// Puts up to <paramref name="count"/> of the item in this character's inventory. Returns how
+	/// many were taken. Shows "Inventory full" when some did not fit. Grants no XP: picking things
+	/// up is not harvesting.
+	/// </summary>
+	public int CollectItems(Item item, int count)
 	{
 		if (item == null)
 		{
 			Debug.LogWarning($"{characterName} tried to collect an item, but no Item asset is assigned.");
-			return false;
+			return 0;
 		}
 
-		if (inventory == null || !inventory.AddItem(item))
-		{
+		count = Mathf.Max(1, count);
+		int taken = inventory == null ? 0 : count - inventory.Add(item, count);
+		if (taken < count)
 			ShowFloatingText("Inventory full", 2f);
-			return false;
-		}
+		if (taken <= 0)
+			return 0;
 
-		Debug.Log($"{characterName} collected {item.itemName}");
-		skills?.GainXP(SkillType.Harvesting, harvestXP);
-		return true;
+		Debug.Log($"{characterName} collected {taken} {item.itemName}");
+		return taken;
 	}
 
 	/// <summary>
