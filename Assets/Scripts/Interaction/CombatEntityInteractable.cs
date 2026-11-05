@@ -25,7 +25,7 @@ public class CombatEntityInteractable : MonoBehaviour, IInteractable
         return string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName;
     }
 
-    public List<InteractionOption> GetAvailableInteractions(SelectableCharacter interactor)
+    public List<InteractionOption> GetAvailableInteractions(Character interactor)
     {
         List<InteractionOption> options = new List<InteractionOption>();
         if (stats == null || stats.IsAlive)
@@ -34,7 +34,7 @@ public class CombatEntityInteractable : MonoBehaviour, IInteractable
         return options;
     }
 
-    public void ExecuteInteraction(SelectableCharacter interactor, string actionId)
+    public void ExecuteInteraction(Character interactor, string actionId)
     {
         if (interactor == null || actionId != attackActionId)
             return;

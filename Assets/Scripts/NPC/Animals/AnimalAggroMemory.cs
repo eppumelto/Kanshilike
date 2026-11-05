@@ -3,17 +3,17 @@ using UnityEngine;
 public sealed class AnimalAggroMemory
 {
     public Transform Target { get; private set; }
-    public SelectableCharacter Character { get; private set; }
+    public CombatActor Character { get; private set; }
     public float Until { get; private set; }
 
-    public void Set(SelectableCharacter attacker, float now, float durationSeconds)
+    public void Set(CombatActor attacker, float now, float durationSeconds)
     {
         Character = attacker;
         Target = attacker != null ? attacker.transform : null;
         Until = now + durationSeconds;
     }
 
-    public bool TryGetLiveTarget(float now, out Transform target, out SelectableCharacter character)
+    public bool TryGetLiveTarget(float now, out Transform target, out CombatActor character)
     {
         bool alive = Target != null
             && Character != null

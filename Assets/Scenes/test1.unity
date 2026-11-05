@@ -2896,6 +2896,7 @@ GameObject:
   m_Component:
   - component: {fileID: 907620023}
   - component: {fileID: 907620025}
+  - component: {fileID: 907620030}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -2932,6 +2933,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 263889503}
   selectedCharacters: []
+--- !u!114 &1440672256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1440672240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24f3d046c46afa8bf2bb3fbab6fcab88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1706174160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1706174140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24f3d046c46afa8bf2bb3fbab6fcab88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &907620030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 907620022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2105e65d52d2529e29661c79dc3cf5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nameText: {fileID: 134880290}
+  hungerSlider: {fileID: 1049951279}
+  thirstSlider: {fileID: 96343765}
+  tirednessSlider: {fileID: 1211819502}
+  skillsPanel: {fileID: 1011423428}
 --- !u!1 &920290886
 GameObject:
   m_ObjectHideFlags: 0
@@ -4349,6 +4391,7 @@ GameObject:
   - component: {fileID: 1440672255}
   - component: {fileID: 1440672252}
   - component: {fileID: 1440672253}
+  - component: {fileID: 1440672256}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -4492,12 +4535,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Jonttuli
-  isSelected: 0
-  nameText: {fileID: 134880290}
-  hungerSlider: {fileID: 1049951279}
-  thirstSlider: {fileID: 96343765}
-  tirednessSlider: {fileID: 1211819502}
-  skillsPanel: {fileID: 1011423428}
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
   canUseEquipment: 1
@@ -5029,6 +5066,7 @@ GameObject:
   - component: {fileID: 1706174152}
   - component: {fileID: 1706174142}
   - component: {fileID: 1706174141}
+  - component: {fileID: 1706174160}
   m_Layer: 0
   m_Name: Character (1)
   m_TagString: Untagged
@@ -5132,12 +5170,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Keppana
-  isSelected: 0
-  nameText: {fileID: 134880290}
-  hungerSlider: {fileID: 1049951279}
-  thirstSlider: {fileID: 96343765}
-  tirednessSlider: {fileID: 1211819502}
-  skillsPanel: {fileID: 1011423428}
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
   canUseEquipment: 1

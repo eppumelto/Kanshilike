@@ -51,18 +51,16 @@ public class AnimalSpawner : MonoBehaviour
             return;
         }
 
-        SelectableCharacter[] characters = FindObjectsByType<SelectableCharacter>(FindObjectsSortMode.None);
-
         for (int i = 0; i < groupCount; i++)
         {
-            if (TryFindGroupCentre(characters, out Vector3 centre))
+            if (TryFindGroupCentre(out Vector3 centre))
                 SpawnGroup(centre);
             else
                 Debug.LogWarning($"[AnimalSpawner] No valid spot for group {i + 1} of {groupCount}. Try a larger spawn radius or smaller minimum distances.", this);
         }
     }
 
-    private bool TryFindGroupCentre(SelectableCharacter[] characters, out Vector3 centre)
+    private bool TryFindGroupCentre(out Vector3 centre)
     {
         for (int attempt = 0; attempt < MaxPlacementAttempts; attempt++)
         {
@@ -70,7 +68,7 @@ public class AnimalSpawner : MonoBehaviour
             Vector3 candidate = transform.position + new Vector3(offset.x, 0f, offset.y);
 
             if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, memberSpacing * 2f, NavMesh.AllAreas)
-                && IsFarEnoughFromOthers(hit.position, characters))
+                && IsFarEnoughFromOthers(hit.position))
             {
                 centre = hit.position;
                 return true;
@@ -81,7 +79,7 @@ public class AnimalSpawner : MonoBehaviour
         return false;
     }
 
-    private bool IsFarEnoughFromOthers(Vector3 position, SelectableCharacter[] characters)
+    private bool IsFarEnoughFromOthers(Vector3 position)
     {
         foreach (Vector3 other in groupCentres)
         {
@@ -89,7 +87,7 @@ public class AnimalSpawner : MonoBehaviour
                 return false;
         }
 
-        foreach (SelectableCharacter character in characters)
+        foreach (PlayerControllable character in PlayerControllable.All)
         {
             if (Vector3.Distance(position, character.transform.position) < minDistanceFromCharacters)
                 return false;

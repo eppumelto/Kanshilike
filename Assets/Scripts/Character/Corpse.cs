@@ -17,7 +17,7 @@ public class Corpse : MonoBehaviour, IInteractable
 
     public string GetName() => $"{DisplayName()} (dead)";
 
-    public List<InteractionOption> GetAvailableInteractions(SelectableCharacter interactor)
+    public List<InteractionOption> GetAvailableInteractions(Character interactor)
     {
         var options = new List<InteractionOption>();
         if (Loot != null)
@@ -25,7 +25,7 @@ public class Corpse : MonoBehaviour, IInteractable
         return options;
     }
 
-    public void ExecuteInteraction(SelectableCharacter interactor, string actionId)
+    public void ExecuteInteraction(Character interactor, string actionId)
     {
         if (actionId == LootActionId && Loot != null)
             InventoryScreen.Instance.OpenLoot(interactor, Loot, GetName());
@@ -35,7 +35,7 @@ public class Corpse : MonoBehaviour, IInteractable
 
     private string DisplayName()
     {
-        var character = GetComponent<SelectableCharacter>();
+        var character = GetComponent<Character>();
         if (character != null && !string.IsNullOrEmpty(character.characterName))
             return character.characterName;
         return gameObject.name;

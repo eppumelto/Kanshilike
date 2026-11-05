@@ -53,7 +53,7 @@ public sealed class AnimalGroup
     }
 
     /// <summary>Tells the other members about a character one member has seen or been hit by.</summary>
-    public void Alert(AnimalAI sender, SelectableCharacter character)
+    public void Alert(AnimalAI sender, CombatActor character)
     {
         foreach (AnimalAI member in members)
         {

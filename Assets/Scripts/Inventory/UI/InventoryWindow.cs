@@ -27,8 +27,8 @@ public class InventoryWindow : MonoBehaviour
 
 	private InventoryScreen screen;
 	private Inventory inventory;
-	private SelectableCharacter character;   // owner, for character windows
-	private SelectableCharacter looter;      // who is looting, for container windows
+	private Character character;   // owner, for character windows
+	private Character looter;      // who is looting, for container windows
 	private EquipmentManager equipment;
 	private InventoryGridView grid;
 	private readonly List<EquipmentSlotView> slots = new List<EquipmentSlotView>();
@@ -38,27 +38,27 @@ public class InventoryWindow : MonoBehaviour
 	private float nextWeightRefresh;
 
 	public Inventory Inventory => inventory;
-	public SelectableCharacter Character => character;
-	public SelectableCharacter Looter => looter;
+	public Character Character => character;
+	public Character Looter => looter;
 	public EquipmentManager Equipment => equipment;
 	public InventoryGridView Grid => grid;
 	public IReadOnlyList<EquipmentSlotView> Slots => slots;
 	public bool IsLootWindow => character == null;
 	public RectTransform Rect => (RectTransform)transform;
 
-	public static InventoryWindow ForCharacter(InventoryScreen screen, SelectableCharacter character)
+	public static InventoryWindow ForCharacter(InventoryScreen screen, Character character)
 	{
 		return Build(screen, character.GetComponent<Inventory>(), character.characterName,
 			character.GetComponent<EquipmentManager>(), character, null);
 	}
 
-	public static InventoryWindow ForContainer(InventoryScreen screen, Inventory inventory, string title, SelectableCharacter looter)
+	public static InventoryWindow ForContainer(InventoryScreen screen, Inventory inventory, string title, Character looter)
 	{
 		return Build(screen, inventory, title, null, null, looter);
 	}
 
 	private static InventoryWindow Build(InventoryScreen screen, Inventory inventory, string title, EquipmentManager equipment,
-		SelectableCharacter character, SelectableCharacter looter)
+		Character character, Character looter)
 	{
 		Vector2 gridSize = InventoryGridView.PixelSize(inventory);
 		bool hasEquipment = equipment != null;

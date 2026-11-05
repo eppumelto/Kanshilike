@@ -83,7 +83,7 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 		return entry != null ? entry.progressLabel : string.Empty;
 	}
 
-	public List<InteractionOption> GetAvailableInteractions(SelectableCharacter interactor)
+	public List<InteractionOption> GetAvailableInteractions(Character interactor)
 	{
 		var options = new List<InteractionOption>();
 		if (consumed)
@@ -99,7 +99,7 @@ public class GenericInteractable : MonoBehaviour, IInteractable
 		return options;
 	}
 
-	public void ExecuteInteraction(SelectableCharacter interactor, string actionId)
+	public void ExecuteInteraction(Character interactor, string actionId)
 	{
 		var entry = interactions.Find(e => e.id == actionId);
 		if (entry == null || consumed || IsExhausted(entry)) return;

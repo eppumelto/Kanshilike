@@ -19,26 +19,23 @@ public class SelectionManager : MonoBehaviour
 	private const float DoubleClickSeconds = 0.3f;
 
 	public Camera mainCamera;
-	public List<SelectableCharacter> selectedCharacters = new List<SelectableCharacter>();
+	public List<PlayerControllable> selectedCharacters = new List<PlayerControllable>();
 
-	public System.Action<IReadOnlyList<SelectableCharacter>> OnSelectionChanged;
-	public SelectableCharacter PrimarySelected => selectedCharacters.Count > 0 ? selectedCharacters[0] : null;
+	public System.Action<IReadOnlyList<PlayerControllable>> OnSelectionChanged;
+	public PlayerControllable PrimarySelected => selectedCharacters.Count > 0 ? selectedCharacters[0] : null;
 
-	private readonly List<SelectableCharacter> squad = new List<SelectableCharacter>();
-	private readonly HashSet<SelectableCharacter> previewed = new HashSet<SelectableCharacter>();
+	private readonly HashSet<PlayerControllable> previewed = new HashSet<PlayerControllable>();
 	private Vector2 pressPosition;
 	private bool pressedInWorld;
 	private bool boxing;
 	private float lastClickTime = -1f;
-	private SelectableCharacter lastClicked;
-	private SelectableCharacter hudCharacter;
+	private PlayerControllable lastClicked;
 
 	private void Start()
 	{
 		if (mainCamera == null)
 			mainCamera = Camera.main;
 
-		squad.AddRange(FindObjectsByType<SelectableCharacter>(FindObjectsSortMode.InstanceID));
 		SelectionHud.Instance.Bind(this);
 	}
 
@@ -49,7 +46,7 @@ public class SelectionManager : MonoBehaviour
 			NotifySelectionChanged();
 
 		if (Input.GetKeyDown(KeyCode.I))
-			InventoryScreen.Instance.Toggle(selectedCharacters);
+			InventoryScreen.Instance.Toggle(SelectedBodies());
 
 		if (CtrlHeld && Input.GetKeyDown(KeyCode.A))
 			SetSelection(AliveSquad(), additive: false);
@@ -65,12 +62,12 @@ public class SelectionManager : MonoBehaviour
 
 	// ── Selection API (also used by the squad bar) ──────────────────────────
 
-	public void SelectOnly(SelectableCharacter character)
+	public void SelectOnly(PlayerControllable character)
 	{
 		SetSelection(new[] { character }, additive: false);
 	}
 
-	public void Toggle(SelectableCharacter character)
+	public void Toggle(PlayerControllable character)
 	{
 		if (character == null)
 			return;
@@ -101,9 +98,9 @@ public class SelectionManager : MonoBehaviour
 	}
 
 	/// <summary>Selects these characters; without <paramref name="additive"/> everyone else is deselected.</summary>
-	public void SetSelection(IEnumerable<SelectableCharacter> characters, bool additive)
+	public void SetSelection(IEnumerable<PlayerControllable> characters, bool additive)
 	{
-		var wanted = new HashSet<SelectableCharacter>();
+		var wanted = new HashSet<PlayerControllable>();
 		foreach (var c in characters)
 			if (c != null && c.IsAlive)
 				wanted.Add(c);
@@ -139,23 +136,18 @@ public class SelectionManager : MonoBehaviour
 
 	private void NotifySelectionChanged()
 	{
-		// The scene has one set of status bars and one skills panel: they show the primary character.
-		SelectableCharacter primary = PrimarySelected;
-		if (primary != hudCharacter)
-		{
-			if (hudCharacter != null)
-				hudCharacter.SetShownInHud(false);
-			if (primary != null)
-				primary.SetShownInHud(true);
-			hudCharacter = primary;
-		}
-
 		OnSelectionChanged?.Invoke(selectedCharacters);
 	}
 
-	private IEnumerable<SelectableCharacter> AliveSquad()
+	private IEnumerable<Character> SelectedBodies()
 	{
-		foreach (var c in squad)
+		foreach (var c in selectedCharacters)
+			yield return c.Character;
+	}
+
+	private IEnumerable<PlayerControllable> AliveSquad()
+	{
+		foreach (var c in PlayerControllable.All)
 			if (c != null && c.IsAlive)
 				yield return c;
 	}
@@ -205,7 +197,7 @@ public class SelectionManager : MonoBehaviour
 
 	private void HandleClick(Vector2 mouse)
 	{
-		SelectableCharacter clicked = CharacterUnder(mouse);
+		PlayerControllable clicked = CharacterUnder(mouse);
 
 		if (clicked == null)
 		{
@@ -223,7 +215,7 @@ public class SelectionManager : MonoBehaviour
 		if (doubleClick)
 		{
 			// Everyone in view, with the clicked character first (primary).
-			var onScreen = new List<SelectableCharacter> { clicked };
+			var onScreen = new List<PlayerControllable> { clicked };
 			onScreen.AddRange(CharactersIn(new Rect(0f, 0f, Screen.width, Screen.height)));
 			SetSelection(onScreen, additive: ShiftHeld);
 			lastClicked = null; // a third click starts over
@@ -234,20 +226,20 @@ public class SelectionManager : MonoBehaviour
 			SelectOnly(clicked);
 	}
 
-	private SelectableCharacter CharacterUnder(Vector2 mouse)
+	private PlayerControllable CharacterUnder(Vector2 mouse)
 	{
 		Ray ray = mainCamera.ScreenPointToRay(mouse);
 		if (!Physics.Raycast(ray, out RaycastHit hit))
 			return null;
 
-		var character = hit.collider.GetComponentInParent<SelectableCharacter>();
+		var character = hit.collider.GetComponentInParent<PlayerControllable>();
 		return character != null && character.IsAlive ? character : null;
 	}
 
 	/// <summary>Living squad members whose on-screen outline overlaps the rectangle (pixels, origin bottom-left).</summary>
-	private List<SelectableCharacter> CharactersIn(Rect rect)
+	private List<PlayerControllable> CharactersIn(Rect rect)
 	{
-		var result = new List<SelectableCharacter>();
+		var result = new List<PlayerControllable>();
 		foreach (var c in AliveSquad())
 			if (TryGetScreenRect(c, out Rect r) && r.Overlaps(rect))
 				result.Add(c);
@@ -255,7 +247,7 @@ public class SelectionManager : MonoBehaviour
 	}
 
 	/// <summary>The character's collider bounds projected to the screen, so touching any part of them counts.</summary>
-	private bool TryGetScreenRect(SelectableCharacter character, out Rect rect)
+	private bool TryGetScreenRect(PlayerControllable character, out Rect rect)
 	{
 		var col = character.GetComponentInChildren<Collider>();
 		Bounds b = col != null ? col.bounds : new Bounds(character.transform.position, Vector3.one);
@@ -285,9 +277,9 @@ public class SelectionManager : MonoBehaviour
 		Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
 
 	/// <summary>Faint rings on whoever the box would select right now.</summary>
-	private void SetPreview(List<SelectableCharacter> characters)
+	private void SetPreview(List<PlayerControllable> characters)
 	{
-		var next = characters != null ? new HashSet<SelectableCharacter>(characters) : new HashSet<SelectableCharacter>();
+		var next = characters != null ? new HashSet<PlayerControllable>(characters) : new HashSet<PlayerControllable>();
 
 		foreach (var c in previewed)
 			if (c != null && !next.Contains(c))
@@ -314,7 +306,7 @@ public class SelectionManager : MonoBehaviour
 		// A body's own interactions (loot) win over whatever it had while alive.
 		Corpse corpse = hit.collider.GetComponentInParent<Corpse>();
 		IInteractable interactable = corpse != null ? corpse : hit.collider.GetComponentInParent<IInteractable>();
-		var options = interactable?.GetAvailableInteractions(selectedCharacters[0]);
+		var options = interactable?.GetAvailableInteractions(selectedCharacters[0].Character);
 
 		if (options != null && options.Count > 0)
 		{
@@ -324,16 +316,16 @@ public class SelectionManager : MonoBehaviour
 
 			// One looter is enough; everything else is done by the whole selection.
 			if (corpse != null)
-				selectedCharacters[0].InteractWith(interactable, chosenAction);
+				selectedCharacters[0].Character.InteractWith(interactable, chosenAction);
 			else
 				foreach (var c in selectedCharacters)
-					c.InteractWith(interactable, chosenAction);
+					c.Character.InteractWith(interactable, chosenAction);
 		}
 		else
 		{
 			// Plain ground, or something with nothing to do (e.g. a corpse): just walk there.
 			foreach (var c in selectedCharacters)
-				c.CommandMove(hit.point);
+				c.Character.CommandMove(hit.point);
 		}
 	}
 }
