@@ -15,6 +15,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	private Inventory inventory;
 	private Coroutine combatLoopRoutine;
 	private GameObject activeActionLabel;
+	private Coroutine treatmentRoutine;
 	private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
 	private static readonly Vector3 LabelOffset = Vector3.up * 1.6f;
 	private const float FaceAttackerSeconds = 3f;
@@ -107,6 +108,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		{
 			stats.OnDied += HandleDied;
 			stats.OnAttacked += HandleAttacked;
+			stats.OnWokeUp += ClearActionLabel;
 		}
 	}
 
@@ -160,6 +162,12 @@ public class Character : CombatActor, ICombatAnimationEventSource
 
 		if (blockedWithShield)
 			ShowFloatingText("Blocked!", 0.6f);
+
+		if (treatmentRoutine != null)
+		{
+			CancelCurrentAction();
+			ShowFloatingText("Interrupted", 2f);
+		}
 	}
 
 	public void MoveTo(Vector3 position)
@@ -202,7 +210,10 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	{
 		StopAllCoroutines();
 		combatLoopRoutine = null;
+		treatmentRoutine = null;
 		combatOpponent = null;
+		if (stats != null)
+			stats.WakeUp();
 		ClearActionLabel();
 		ReleaseReservedSlot();
 	}
@@ -304,17 +315,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 			float scaledDuration = duration / stats.HarvestSpeedMultiplier;
 
 			// Show a floating action label above the character while waiting.
-			if (harvestingLabelPrefab != null)
-			{
-				activeActionLabel = SpawnLabel();
-				var actionLabel = activeActionLabel.GetComponent<HarvestingLabel>();
-				if (actionLabel != null)
-				{
-					string text = target.GetInteractionLabel(actionId);
-					if (!string.IsNullOrEmpty(text))
-						actionLabel.SetText(text);
-				}
-			}
+			ShowActionLabel(target.GetInteractionLabel(actionId));
 
 			yield return new WaitForSeconds(scaledDuration);
 
@@ -324,6 +325,19 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		// Another character may have picked up or used up the target while we walked or worked.
 		if (CanStillPerform(target, actionId))
 			target.ExecuteInteraction(this, actionId);
+	}
+
+	// Floating label above the character that stays until ClearActionLabel.
+	private void ShowActionLabel(string text)
+	{
+		if (harvestingLabelPrefab == null)
+			return;
+
+		ClearActionLabel();
+		activeActionLabel = SpawnLabel();
+		var actionLabel = activeActionLabel.GetComponent<HarvestingLabel>();
+		if (actionLabel != null && !string.IsNullOrEmpty(text))
+			actionLabel.SetText(text);
 	}
 
 	private void ClearActionLabel()
@@ -366,6 +380,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	{
 		Debug.Log($"{characterName} is sleeping");
 		stats?.Sleep(8f);
+		ShowActionLabel("Sleeping...");
 	}
 	public void Attack(IInteractable target)
 	{
@@ -584,6 +599,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		{
 			stats.OnDied -= HandleDied;
 			stats.OnAttacked -= HandleAttacked;
+			stats.OnWokeUp -= ClearActionLabel;
 		}
 	}
 
@@ -663,6 +679,74 @@ public class Character : CombatActor, ICombatAnimationEventSource
 			return false;
 
 		return true;
+	}
+
+	/// <summary>
+	/// Starts binding a wound with a healing item from this character's inventory. The heal and the
+	/// item cost come at the end, so an interruption costs only time.
+	/// </summary>
+	public bool TryTreatWounds(Inventory.Entry entry, out string reason)
+	{
+		reason = null;
+		if (inventory == null || stats == null || !IsAlive)
+		{
+			reason = "Can't treat wounds";
+			return false;
+		}
+
+		if (treatmentRoutine != null)
+		{
+			reason = "Already binding wounds";
+			return false;
+		}
+
+		if (!HealingRules.CanTreat(stats.currentHealth, stats.maxHealth))
+		{
+			reason = "Not wounded";
+			return false;
+		}
+
+		if (entry == null || !inventory.Contains(entry) || entry.item is not HealingItem item)
+		{
+			reason = "Can't use that";
+			return false;
+		}
+
+		if (stats.HealingConfig == null)
+		{
+			Debug.LogWarning($"{characterName} has no HealingConfig assigned.");
+			reason = "Can't treat wounds";
+			return false;
+		}
+
+		CancelCurrentAction();
+		if (agent != null && agent.isOnNavMesh)
+			agent.ResetPath();
+
+		treatmentRoutine = StartCoroutine(TreatWounds(entry, item));
+		return true;
+	}
+
+	private IEnumerator TreatWounds(Inventory.Entry entry, HealingItem item)
+	{
+		HealingConfig config = stats.HealingConfig;
+		float bonus = skills != null ? skills.GetBonus(SkillType.FirstAid) : 1f;
+
+		ShowActionLabel(item.progressLabel);
+		yield return new WaitForSeconds(HealingRules.TreatmentSeconds(item.useSeconds, bonus, config.firstAidSpeedScale, config.minTreatmentSeconds));
+		ClearActionLabel();
+
+		// The stack may have been dragged away or looted while we worked: then nothing is healed or spent.
+		if (inventory.Contains(entry) && stats.IsAlive)
+		{
+			float gained = stats.Heal(HealingRules.TreatmentHeal(item.healAmount, bonus, config.firstAidHealScale));
+			inventory.RemoveOne(entry);
+			skills?.GainXP(SkillType.FirstAid, HealingRules.TreatmentXP(gained, config.firstAidXPPerHealthPoint));
+			ShowFloatingText($"+{gained:F0} HP", 2f);
+			Debug.Log($"{characterName} used {item.itemName}: +{gained:F0} HP");
+		}
+
+		treatmentRoutine = null;
 	}
 
 	/// <summary>Refills every empty container this drink comes in (e.g. empty waterskins). Returns how many.</summary>

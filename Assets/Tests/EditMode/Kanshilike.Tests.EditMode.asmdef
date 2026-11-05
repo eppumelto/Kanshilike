@@ -3,7 +3,8 @@
     "rootNamespace": "Kanshilike.Tests.EditMode",
     "references": [
         "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner"
+        "UnityEditor.TestRunner",
+        "Kanshilike.Healing"
     ],
     "includePlatforms": [
         "Editor"

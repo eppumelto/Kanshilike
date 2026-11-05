@@ -203,6 +203,8 @@ public class InventoryWindow : MonoBehaviour
 		}
 		else if (entry.item is EquippableItem)
 			InventoryActions.TryEquip(inventory, entry, equipment, inventory, out reason);
+		else if (entry.item is HealingItem)
+			character.TryTreatWounds(entry, out reason);
 		else if (!character.TryConsume(entry))
 			reason = $"Can't use {entry.item.itemName}";
 
