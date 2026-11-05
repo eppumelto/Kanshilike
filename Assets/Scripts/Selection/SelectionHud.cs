@@ -100,6 +100,15 @@ public class SelectionHud : MonoBehaviour
 	{
 		manager = selectionManager;
 		manager.OnSelectionChanged += _ => RefreshCards();
+		PlayerControllable.Joined += HandleSquadMemberJoined;
+		BuildSquadBar();
+	}
+
+	private void OnDestroy() => PlayerControllable.Joined -= HandleSquadMemberJoined;
+
+	private void HandleSquadMemberJoined(PlayerControllable member)
+	{
+		lastHudTop = -1f; // make PlaceSquadBar position the new bar
 		BuildSquadBar();
 	}
 
@@ -109,8 +118,8 @@ public class SelectionHud : MonoBehaviour
 			Destroy(squadBar.gameObject);
 		cards.Clear();
 
-		var squad = new List<SelectableCharacter>(FindObjectsByType<SelectableCharacter>(FindObjectsSortMode.InstanceID));
-		squad.Sort((x, y) => string.CompareOrdinal(x.characterName, y.characterName));
+		var squad = new List<PlayerControllable>(PlayerControllable.All);
+		squad.Sort((x, y) => string.CompareOrdinal(x.Character.characterName, y.Character.characterName));
 
 		float width = squad.Count * CardWidth + Mathf.Max(0, squad.Count - 1) * CardGap;
 		squadBar = UIFactory.Rect("SquadBar", root, Vector2.zero, new Vector2(width, CardHeight));

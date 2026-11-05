@@ -4,8 +4,8 @@ using UnityEngine;
 public interface IInteractable
 {
 	string GetName();
-	List<InteractionOption> GetAvailableInteractions(SelectableCharacter interactor);
-	void ExecuteInteraction(SelectableCharacter interactor, string actionId);
+	List<InteractionOption> GetAvailableInteractions(Character interactor);
+	void ExecuteInteraction(Character interactor, string actionId);
 	Vector3 GetInteractionPoint();
 	// Returns how many seconds this action takes before ExecuteInteraction is called. 0 = instant.
 	// TODO: Feed character skill level into the caller to scale duration.

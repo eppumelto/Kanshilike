@@ -11,15 +11,16 @@ using UnityEngine.AI;
 ///
 /// Requires: NavMeshAgent on the same GameObject.
 /// Assign an AnimalPersonality asset in the Inspector.
-/// Player characters need a SelectableCharacter component.
+/// Reacts to any CombatActor of a hostile faction.
 /// </summary>
 [RequireComponent(typeof(NavMeshAgent))]
-public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
+public class AnimalAI : CombatActor, INaturalAttacker
 {
     // ------------------------------------------------------------------ //
     //  Inspector
     // ------------------------------------------------------------------ //
 
+    [SerializeField] private Faction faction = Faction.Wildlife;
     [SerializeField] private AnimalPersonality personality;
     [SerializeField] private AnimalPredatorBehaviorProfile behaviorProfile;
     [SerializeField] private CombatFormulaConfig combatFormulaConfig;
@@ -45,33 +46,27 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
     /// <summary>Currently detected threat (nearest player character in LoS).</summary>
     private Transform detectedTarget;
-    private SelectableCharacter detectedCharacter;
+    private CombatActor detectedCharacter;
 
     /// <summary>
     /// The character this predator is reacting to. Locked in when first seen and kept while
     /// chasing/fleeing even if it leaves the vision cone; distance thresholds end the reaction.
     /// </summary>
     private Transform threat;
-    private SelectableCharacter threatCharacter;
+    private CombatActor threatCharacter;
     private readonly AnimalAggroMemory aggroMemory = new AnimalAggroMemory();
 
     /// <summary>The group this predator belongs to. Null for one placed by hand in a scene.</summary>
     private AnimalGroup group;
 
-    private CharacterStats stats;
-    private SkillSet skills;
-    private EquipmentManager equipment;
     private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
     private float nextAttackTime;
 
-    public Transform ActorTransform => transform;
-    public CharacterStats Stats => stats;
-    public SkillSet Skills => skills;
-    public EquipmentManager Equipment => equipment;
-    public bool CanUseEquipment => false;
-    public bool CanBlock => personality != null && personality.canBlock;
-    public bool CanDodge => personality != null && personality.canDodge;
-    public bool CanCounter => personality == null || personality.canCounter;
+    public override Faction Faction => faction;
+    public override bool CanUseEquipment => false;
+    public override bool CanBlock => personality != null && personality.canBlock;
+    public override bool CanDodge => personality != null && personality.canDodge;
+    public override bool CanCounter => personality == null || personality.canCounter;
     public NaturalAttack NaturalAttack => naturalAttack;
 
     /// <summary>Countdown timer used in the Idle state.</summary>
@@ -106,13 +101,11 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
     //  Unity lifecycle
     // ------------------------------------------------------------------ //
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         agent = GetComponent<NavMeshAgent>();
         spawnOrigin = transform.position;
-        stats = GetComponent<CharacterStats>();
-        skills = GetComponent<SkillSet>();
-        equipment = GetComponent<EquipmentManager>();
     }
 
     private void OnEnable()
@@ -177,7 +170,7 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
     /// <summary>
     /// Two-phase detection: sphere pre-filter → FOV cone → raycast LoS.
-    /// Sets <see cref="detectedTarget"/> to the nearest visible SelectableCharacter,
+    /// Sets <see cref="detectedTarget"/> to the nearest visible hostile CombatActor,
     /// or null if none are visible.
     /// </summary>
     private void DetectPlayer()
@@ -186,6 +179,7 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
         AnimalDetectionResult detection = AnimalPerceptionUtility.DetectNearestTarget(
             transform,
+            Faction,
             personality,
             aggroMemory.Target,
             aggroMemory.Character,
@@ -206,7 +200,7 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
             group?.Alert(this, detectedCharacter);
     }
 
-    private void SetThreat(Transform target, SelectableCharacter character)
+    private void SetThreat(Transform target, CombatActor character)
     {
         threat = target;
         threatCharacter = character;
@@ -372,7 +366,7 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
     }
 
     /// <summary>A group mate spotted this character, so react as if it had been seen.</summary>
-    public void ReceiveGroupAlert(SelectableCharacter character)
+    public void ReceiveGroupAlert(CombatActor character)
     {
         if (character == null || character.Stats == null || !character.Stats.IsAlive)
             return;
@@ -448,11 +442,11 @@ public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
         if (!retaliateWhenAttacked || source == null || (stats != null && !stats.IsAlive))
             return;
 
-        SelectableCharacter attacker = source.GetComponent<SelectableCharacter>();
+        CombatActor attacker = source.GetComponent<CombatActor>();
         if (attacker == null)
-            attacker = source.GetComponentInParent<SelectableCharacter>();
+            attacker = source.GetComponentInParent<CombatActor>();
         if (attacker == null)
-            attacker = source.GetComponentInChildren<SelectableCharacter>();
+            attacker = source.GetComponentInChildren<CombatActor>();
 
         if (attacker == null || attacker.Stats == null || !attacker.Stats.IsAlive)
             return;

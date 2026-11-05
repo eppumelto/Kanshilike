@@ -20,19 +20,26 @@ public class GameOverScreen : MonoBehaviour
 
     private void Start()
     {
-        foreach (var character in FindObjectsByType<SelectableCharacter>(FindObjectsSortMode.None))
-        {
-            var stats = character.GetComponent<CharacterStats>();
-            if (stats == null)
-                continue;
+        foreach (var member in PlayerControllable.All)
+            Track(member);
 
-            squad.Add(stats);
-            stats.OnDied += HandleMemberDied;
-        }
+        PlayerControllable.Joined += Track;
+    }
+
+    private void Track(PlayerControllable member)
+    {
+        var stats = member.GetComponent<CharacterStats>();
+        if (stats == null || squad.Contains(stats))
+            return;
+
+        squad.Add(stats);
+        stats.OnDied += HandleMemberDied;
     }
 
     private void OnDestroy()
     {
+        PlayerControllable.Joined -= Track;
+
         foreach (var stats in squad)
             if (stats != null)
                 stats.OnDied -= HandleMemberDied;

@@ -30,12 +30,12 @@ play-tested.
 ## Project layout
 
 - `Assets/Scripts/` holds all game code. The main areas:
-  - `Character/`: `CharacterStats` (health, hunger, thirst, tiredness), `SelectableCharacter`, corpses and corpse loot
-  - `Combat/`: exchange and formula resolution, attacker slots, facing; tuning lives in `Assets/Items/CombatFormulaConfig.asset`
+  - `Character/`: `CharacterStats` (health, hunger, thirst, tiredness), `Character` (a person: fights, carries, follows orders), corpses and corpse loot
+  - `Combat/`: `CombatActor` (base for `Character` and `AnimalAI`), `Faction`, exchange and formula resolution, attacker slots, facing; tuning lives in `Assets/Items/CombatFormulaConfig.asset`
   - `Inventory/`: grid inventory, item types (`Item` ScriptableObjects), equipment, `Inventory/UI/`
   - `Interaction/`: `GenericInteractable` (Drink, Eat, Sleep, Collect, Harvest, Attack)
-  - `NPC/Animals/Wolf/`: wolf AI (perception, aggro memory, chase and combat)
-  - `Selection/`: RTS selection, rings, squad bar
+  - `NPC/Animals/`: `AnimalAI` for wolves and deer (perception, aggro memory, chase and combat), groups, spawning
+  - `Selection/`: RTS selection, `PlayerControllable` (squad membership), `CharacterHud`, rings, squad bar
   - `Skills/`: `SkillType`, `SkillSet`, skill definitions and the panel
   - `TimeManager.cs`: the day cycle; it broadcasts `OnTimeChanged`, and needs tick hourly from it
   - `Old/`: legacy random terrain and village generation; not in active use

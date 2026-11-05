@@ -17,7 +17,8 @@ public class SquadCard : MonoBehaviour, IPointerClickHandler
 	private static readonly Color HungerColor = new Color(0.95f, 0.60f, 0.15f);
 	private static readonly Color ThirstColor = new Color(0.25f, 0.55f, 0.95f);
 
-	private SelectableCharacter character;
+	private PlayerControllable member;
+	private Character character;
 	private SelectionManager manager;
 	private Image frame;
 	private Image body;
@@ -27,13 +28,16 @@ public class SquadCard : MonoBehaviour, IPointerClickHandler
 	private RectTransform thirstFill;
 	private float nextRefresh;
 
-	public static SquadCard Create(Transform parent, SelectableCharacter character, SelectionManager manager, Vector2 topLeft, Vector2 size)
+	public static SquadCard Create(Transform parent, PlayerControllable member, SelectionManager manager, Vector2 topLeft, Vector2 size)
 	{
+		Character character = member.Character;
+
 		// The bar is anchored at the bottom, so lay cards out from its top-left corner.
 		var frame = UIFactory.Panel(character.characterName + " Card", parent, topLeft, size, Frame);
 		var body = UIFactory.Panel("Body", frame.transform, new Vector2(2f, 2f), size - new Vector2(4f, 4f), Body, raycast: false);
 
 		var card = frame.gameObject.AddComponent<SquadCard>();
+		card.member = member;
 		card.character = character;
 		card.manager = manager;
 		card.frame = frame;
@@ -84,7 +88,7 @@ public class SquadCard : MonoBehaviour, IPointerClickHandler
 
 		var stats = character.Stats;
 		bool alive = character.IsAlive;
-		bool selected = alive && manager != null && manager.selectedCharacters.Contains(character);
+		bool selected = alive && manager != null && manager.selectedCharacters.Contains(member);
 
 		frame.color = selected ? SelectedFrame : Frame;
 		body.color = alive ? Body : new Color(0.12f, 0.12f, 0.12f, 0.9f);
@@ -107,14 +111,14 @@ public class SquadCard : MonoBehaviour, IPointerClickHandler
 		bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 		if (eventData.clickCount >= 2)
 		{
-			manager.SelectOnly(character);
+			manager.SelectOnly(member);
 			var cam = Camera.main != null ? Camera.main.GetComponent<RTSCamera>() : null;
 			if (cam != null)
 				cam.FocusOn(character.transform.position);
 		}
 		else if (shift)
-			manager.Toggle(character);
+			manager.Toggle(member);
 		else
-			manager.SelectOnly(character);
+			manager.SelectOnly(member);
 	}
 }

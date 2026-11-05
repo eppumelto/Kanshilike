@@ -17,7 +17,7 @@ public static class AnimalChaseCombatExecutor
         CombatFormulaConfig combatFormulaConfig,
         CombatSlotReservation reservedTargetSlot,
         Transform detectedTarget,
-        SelectableCharacter detectedCharacter,
+        CombatActor detectedCharacter,
         ref float nextAttackTime)
     {
         if (detectedTarget == null || detectedCharacter == null || detectedCharacter.Stats == null || !detectedCharacter.Stats.IsAlive)

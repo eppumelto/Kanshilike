@@ -5,14 +5,14 @@ using TMPro;
 /// Generic action label shown above a character during timed interactions
 /// (e.g. "Harvesting...", "Drinking...").
 /// Uses a 3D TextMeshPro — NO Canvas needed.
-/// SelectableCharacter instantiates, calls SetText(), and destroys it automatically.
+/// Character instantiates, calls SetText(), and destroys it automatically.
 ///
 /// Prefab setup:
 ///   1. Create an empty GameObject.
 ///   2. Add a TextMeshPro component (3D, not TextMeshProUGUI).
 ///   3. Set font size ~2, color white, center-aligned. Leave default text empty.
 ///   4. Add this component — it auto-finds the TextMeshPro if left unassigned.
-///   5. Save as prefab and assign to SelectableCharacter.harvestingLabelPrefab.
+///   5. Save as prefab and assign to Character.harvestingLabelPrefab.
 /// </summary>
 public class HarvestingLabel : MonoBehaviour
 {

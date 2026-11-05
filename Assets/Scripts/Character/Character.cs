@@ -1,21 +1,18 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UI;
-using TMPro;
 
-public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimationEventSource
+/// <summary>
+/// A person in the world: walks, fights, carries things, eats and carries out orders. Selection
+/// lives in PlayerControllable and the on-screen status in CharacterHud, so a Character with no
+/// player attached (a bandit, a trader) works the same way.
+/// </summary>
+public class Character : CombatActor, ICombatAnimationEventSource
 {
 	public string characterName;
-	public bool isSelected = false;
-	private bool shownInHud;
 
-	private SelectionRing ring;
 	private NavMeshAgent agent;
-	private CharacterStats stats;
 	private Inventory inventory;
-	private SkillSet skillSet;
-	private EquipmentManager equipmentManager;
 	private Coroutine combatLoopRoutine;
 	private GameObject activeActionLabel;
 	private readonly CombatSlotReservation reservedTargetSlot = new CombatSlotReservation();
@@ -37,17 +34,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private Vector3 lastPosition;
 	private const float AthleticsXPPerUnit = 0.05f;
 
-	public TMP_Text nameText;
-	public Slider hungerSlider;
-	public Slider thirstSlider;
-	public Slider tirednessSlider;
-
-	[SerializeField] private SkillsPanel skillsPanel;
-
 	[Tooltip("World-space Canvas prefab shown above the character while harvesting. Assign the HarvestingLabel prefab here.")]
 	[SerializeField] private GameObject harvestingLabelPrefab;
 
 	[Header("Combat")]
+	[SerializeField] private Faction faction = Faction.Player;
 	[SerializeField] private CombatFormulaConfig combatFormulaConfig;
 	[SerializeField] private bool canUseEquipment = true;
 	[SerializeField] private bool canBlock = true;
@@ -70,9 +61,9 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 	/// <summary>Kilograms in the inventory plus everything equipped.</summary>
 	public float CarryWeight =>
-		(inventory != null ? inventory.TotalWeight : 0f) + (equipmentManager != null ? equipmentManager.TotalWeight : 0f);
+		(inventory != null ? inventory.TotalWeight : 0f) + (equipment != null ? equipment.TotalWeight : 0f);
 
-	public float CarryCapacity => baseCarryCapacity * (skillSet != null ? skillSet.GetBonus(SkillType.Strength) : 1f);
+	public float CarryCapacity => baseCarryCapacity * (skills != null ? skills.GetBonus(SkillType.Strength) : 1f);
 
 	/// <summary>Carried weight as a fraction of capacity: 0.5 is where it starts to slow you, 1 is full.</summary>
 	public float Encumbrance => CarryWeight / Mathf.Max(1f, CarryCapacity);
@@ -94,14 +85,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		return 0.25f;
 	}
 
-	public Transform ActorTransform => transform;
-	public CharacterStats Stats => stats;
-	public SkillSet Skills => skillSet;
-	public EquipmentManager Equipment => equipmentManager;
-	public bool CanUseEquipment => canUseEquipment;
-	public bool CanBlock => canBlock;
-	public bool CanDodge => true;
-	public bool CanCounter => canCounter;
+	public override Faction Faction => faction;
+	public override bool CanUseEquipment => canUseEquipment;
+	public override bool CanBlock => canBlock;
+	public override bool CanDodge => true;
+	public override bool CanCounter => canCounter;
 
 	public event System.Action<CombatAnimationEventArgs> OnAttackWindup;
 	public event System.Action<CombatAnimationEventArgs> OnAttackImpact;
@@ -110,10 +98,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	void Start()
 	{
 		agent = GetComponent<NavMeshAgent>();
-		stats = GetComponent<CharacterStats>();
 		inventory = GetComponent<Inventory>();
-		skillSet = GetComponent<SkillSet>();
-		equipmentManager = GetComponent<EquipmentManager>();
 		lastPosition = transform.position;
 		if (agent != null)
 			baseMoveSpeed = agent.speed;
@@ -123,11 +108,6 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			stats.OnDied += HandleDied;
 			stats.OnAttacked += HandleAttacked;
 		}
-
-		// Initialize sliders
-		hungerSlider.maxValue = 100f;
-		thirstSlider.maxValue = 100f;
-		tirednessSlider.maxValue = 100f;
 	}
 
 	private void Update()
@@ -137,11 +117,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		float encumbrance = Encumbrance;
 		if (moved > 0.01f)
 		{
-			skillSet?.GainXP(SkillType.Athletics, moved * AthleticsXPPerUnit);
+			skills?.GainXP(SkillType.Athletics, moved * AthleticsXPPerUnit);
 
 			// Kenshi-style: hauling a heavy load trains Strength.
 			if (encumbrance > 0.5f)
-				skillSet?.GainXP(SkillType.Strength, moved * StrengthXPPerUnit * Mathf.Min(2f, (encumbrance - 0.5f) * 2f));
+				skills?.GainXP(SkillType.Strength, moved * StrengthXPPerUnit * Mathf.Min(2f, (encumbrance - 0.5f) * 2f));
 
 			lastPosition = transform.position;
 		}
@@ -155,29 +135,6 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		{
 			nextAutoConsumeCheck = Time.time + AutoConsumeCheckSeconds;
 			AutoConsume();
-		}
-
-		if (shownInHud)
-		{
-			nameText.text = characterName;
-			hungerSlider.value = stats.hunger;
-			thirstSlider.value = stats.thirst;
-			tirednessSlider.value = stats.tiredness;
-		}
-	}
-
-	/// <summary>Ground ring shown when selected (and while a drag-box is over the character).</summary>
-	public SelectionRing Ring
-	{
-		get
-		{
-			if (ring == null)
-			{
-				ring = GetComponent<SelectionRing>();
-				if (ring == null)
-					ring = gameObject.AddComponent<SelectionRing>();
-			}
-			return ring;
 		}
 	}
 
@@ -203,27 +160,6 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 		if (blockedWithShield)
 			ShowFloatingText("Blocked!", 0.6f);
-	}
-
-	public void SetSelected(bool selected)
-	{
-		isSelected = selected;
-		Ring.SetSelected(selected);
-	}
-
-	/// <summary>Called by SelectionManager: only the primary character drives the shared status bars and skills panel.</summary>
-	public void SetShownInHud(bool shown)
-	{
-		shownInHud = shown;
-
-		if (shown)
-		{
-			if (skillSet == null)
-				Debug.LogWarning($"[SkillsPanel] {characterName} has no SkillSet component — skills panel will stay blank.");
-			skillsPanel?.Bind(skillSet);
-		}
-		else
-			skillsPanel?.Unbind();
 	}
 
 	public void MoveTo(Vector3 position)
@@ -255,17 +191,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			StartCoroutine(MoveAndPerform(target, option.id));
 	}
 
-	public bool IsAlive => stats == null || stats.IsAlive;
-
 	private void HandleDied(GameObject killer)
 	{
 		CancelCurrentAction();
-		if (isSelected)
-			SetSelected(false); // hides the ring; SelectionManager moves the HUD on next frame
-		Ring.SetPreview(false);
-
 		// Gear goes into the bag so the body can be looted.
-		InventoryActions.UnequipAllInto(equipmentManager, inventory);
+		InventoryActions.UnequipAllInto(equipment, inventory);
 	}
 
 	private void CancelCurrentAction()
@@ -472,7 +402,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		if (defenderStats == null)
 		{
 			Debug.Log($"[Combat] {characterName} found no combat stats on target; awarding training XP only.");
-			skillSet?.GainXP(attackerProfile.UsedWeaponSkill, 5f);
+			skills?.GainXP(attackerProfile.UsedWeaponSkill, 5f);
 			return;
 		}
 
@@ -527,7 +457,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		projectile.Launch(velocity, attackProfile, combatFormulaConfig, gameObject,
 			(defender, result) => HandleArrowHit(defender, result, attackProfile.UsedWeaponSkill));
 
-		skillSet?.GainXP(attackProfile.UsedWeaponSkill, ArrowShotXP);
+		skills?.GainXP(attackProfile.UsedWeaponSkill, ArrowShotXP);
 	}
 
 	// Runs when the arrow lands, by which time the archer may be gone.
@@ -543,12 +473,12 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		{
 			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, defenderObject, result.Reaction, result.DamageDealt));
 			Debug.Log($"[Combat] {characterName}'s arrow hit {defenderObject.name} for {result.DamageDealt:F1}.");
-			skillSet?.GainXP(skill, 10f);
+			skills?.GainXP(skill, 10f);
 		}
 		else
 		{
 			Debug.Log($"[Combat] {characterName}'s arrow was blocked by {defenderObject.name}.");
-			skillSet?.GainXP(skill, 3f);
+			skills?.GainXP(skill, 3f);
 		}
 	}
 
@@ -622,8 +552,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, defender.ActorTransform.gameObject, result.Reaction, result.DamageDealt));
 			string defense = result.Reaction == CombatReactionType.None ? "undefended" : $"{result.Reaction} failed";
 			Debug.Log($"[Combat] {characterName} hit for {result.DamageDealt:F1} ({defense}).");
-			skillSet?.GainXP(attackerProfile.UsedWeaponSkill, 10f);
-			skillSet?.GainXP(SkillType.Strength, 2f);
+			skills?.GainXP(attackerProfile.UsedWeaponSkill, 10f);
+			skills?.GainXP(SkillType.Strength, 2f);
 		}
 		else
 		{
@@ -631,7 +561,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 				Debug.Log($"[Combat] {characterName}'s attack was countered for {result.CounterDamage:F1} damage.");
 
 			Debug.Log($"[Combat] {characterName}'s attack was prevented by {result.Reaction}.");
-			skillSet?.GainXP(attackerProfile.UsedWeaponSkill, 3f);
+			skills?.GainXP(attackerProfile.UsedWeaponSkill, 3f);
 		}
 
 		if (!defenderStats.IsAlive)
@@ -678,7 +608,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		}
 
 		Debug.Log($"{characterName} collected {item.itemName}");
-		skillSet?.GainXP(SkillType.Harvesting, harvestXP);
+		skills?.GainXP(SkillType.Harvesting, harvestXP);
 		return true;
 	}
 

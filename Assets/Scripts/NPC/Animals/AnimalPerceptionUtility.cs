@@ -3,9 +3,9 @@ using UnityEngine;
 public readonly struct AnimalDetectionResult
 {
     public Transform Target { get; }
-    public SelectableCharacter Character { get; }
+    public CombatActor Character { get; }
 
-    public AnimalDetectionResult(Transform target, SelectableCharacter character)
+    public AnimalDetectionResult(Transform target, CombatActor character)
     {
         Target = target;
         Character = character;
@@ -16,9 +16,10 @@ public static class AnimalPerceptionUtility
 {
     public static AnimalDetectionResult DetectNearestTarget(
         Transform self,
+        Faction selfFaction,
         AnimalPersonality personality,
         Transform forcedAggroTarget,
-        SelectableCharacter forcedAggroCharacter,
+        CombatActor forcedAggroCharacter,
         float forcedAggroUntil,
         float now)
     {
@@ -28,7 +29,10 @@ public static class AnimalPerceptionUtility
         Collider[] nearby = Physics.OverlapSphere(self.position, personality.detectionRange, personality.detectionMask);
         foreach (Collider col in nearby)
         {
-            if (!col.TryGetComponent<SelectableCharacter>(out var candidate) || !candidate.IsAlive)
+            if (!col.TryGetComponent<CombatActor>(out var candidate) || !candidate.IsAlive)
+                continue;
+
+            if (!FactionRelations.AreHostile(selfFaction, candidate.Faction))
                 continue;
 
             Vector3 dirToTarget = col.transform.position - self.position;
@@ -63,7 +67,7 @@ public static class AnimalPerceptionUtility
         if (hasForcedAggro)
             nearest = forcedAggroTarget;
 
-        SelectableCharacter character = nearest != null ? nearest.GetComponent<SelectableCharacter>() : null;
+        CombatActor character = nearest != null ? nearest.GetComponent<CombatActor>() : null;
         return new AnimalDetectionResult(nearest, character);
     }
 }

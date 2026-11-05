@@ -112,7 +112,7 @@ public class InventoryScreen : MonoBehaviour
 	// ── Windows ─────────────────────────────────────────────────────────────
 
 	/// <summary>I key: closes everything if anything is open, otherwise opens the selected characters' inventories.</summary>
-	public void Toggle(IReadOnlyList<SelectableCharacter> characters)
+	public void Toggle(IEnumerable<Character> characters)
 	{
 		if (windows.Count > 0)
 		{
@@ -130,7 +130,7 @@ public class InventoryScreen : MonoBehaviour
 		}
 	}
 
-	public InventoryWindow OpenCharacter(SelectableCharacter character)
+	public InventoryWindow OpenCharacter(Character character)
 	{
 		if (character == null || !character.IsAlive || character.GetComponent<Inventory>() == null)
 			return null;
@@ -146,7 +146,7 @@ public class InventoryScreen : MonoBehaviour
 	}
 
 	/// <summary>Opens a container (corpse) next to the looter's own inventory.</summary>
-	public void OpenLoot(SelectableCharacter looter, Inventory container, string title)
+	public void OpenLoot(Character looter, Inventory container, string title)
 	{
 		if (looter == null || container == null)
 			return;
