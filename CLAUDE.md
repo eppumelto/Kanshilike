@@ -26,6 +26,8 @@ play-tested.
 - When you finish an item, tick it off (`- [x]`) in the same commit as the code change.
 - When a new idea or bug comes up, add it to the plan instead of keeping it only in chat.
 - Larger features get a short design note under their item in the plan before coding.
+- Before changing how characters, combat, orders or relations fit together, read
+  [`docs/architecture.md`](docs/architecture.md): the known gaps and their recommended order.
 
 ## Project layout
 
