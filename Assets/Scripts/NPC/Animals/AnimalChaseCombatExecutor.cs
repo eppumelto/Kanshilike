@@ -53,12 +53,19 @@ public static class AnimalChaseCombatExecutor
         if (Time.time < nextAttackTime)
             return AnimalChaseStepResult.Continue;
 
-        CombatExchangeResolver.ResolveAndApply(
+        CombatExchangeResult result = CombatExchangeResolver.ResolveAndApply(
             attack,
             attacker,
             detectedCharacter,
             detectedCharacter.Stats,
             combatFormulaConfig,
+            attackerObject);
+
+        Debug.Log(
+            $"[Combat] {attackerObject.name} attacked {detectedTarget.name}: " +
+            (result.HitLanded
+                ? $"hit for {result.DamageDealt:F1} ({result.Reaction} failed)."
+                : $"prevented by {result.Reaction}, counter damage {result.CounterDamage:F1}."),
             attackerObject);
 
         nextAttackTime = Time.time + attack.Interval;
