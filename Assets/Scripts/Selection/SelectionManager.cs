@@ -31,6 +31,7 @@ public class SelectionManager : MonoBehaviour
 	private bool boxing;
 	private float lastClickTime = -1f;
 	private SelectableCharacter lastClicked;
+	private SelectableCharacter hudCharacter;
 
 	private void Start()
 	{
@@ -138,6 +139,17 @@ public class SelectionManager : MonoBehaviour
 
 	private void NotifySelectionChanged()
 	{
+		// The scene has one set of status bars and one skills panel: they show the primary character.
+		SelectableCharacter primary = PrimarySelected;
+		if (primary != hudCharacter)
+		{
+			if (hudCharacter != null)
+				hudCharacter.SetShownInHud(false);
+			if (primary != null)
+				primary.SetShownInHud(true);
+			hudCharacter = primary;
+		}
+
 		OnSelectionChanged?.Invoke(selectedCharacters);
 	}
 
@@ -307,7 +319,7 @@ public class SelectionManager : MonoBehaviour
 		if (options != null && options.Count > 0)
 		{
 			// For now, auto-pick the first action
-			string chosenAction = options[0].id;
+			InteractionOption chosenAction = options[0];
 			Debug.Log($"Interacting with {interactable.GetName()} using '{options[0].displayName}'");
 
 			// One looter is enough; everything else is done by the whole selection.

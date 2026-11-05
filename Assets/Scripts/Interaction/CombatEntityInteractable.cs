@@ -29,7 +29,7 @@ public class CombatEntityInteractable : MonoBehaviour, IInteractable
     {
         List<InteractionOption> options = new List<InteractionOption>();
         if (stats == null || stats.IsAlive)
-            options.Add(new InteractionOption(attackActionId, attackDisplayName));
+            options.Add(new InteractionOption(attackActionId, attackDisplayName, InteractionKind.Attack));
 
         return options;
     }

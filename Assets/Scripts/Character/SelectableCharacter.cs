@@ -8,6 +8,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 {
 	public string characterName;
 	public bool isSelected = false;
+	private bool shownInHud;
 
 	private SelectionRing ring;
 	private NavMeshAgent agent;
@@ -156,7 +157,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			AutoConsume();
 		}
 
-		if (isSelected)
+		if (shownInHud)
 		{
 			nameText.text = characterName;
 			hungerSlider.value = stats.hunger;
@@ -208,8 +209,14 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	{
 		isSelected = selected;
 		Ring.SetSelected(selected);
+	}
 
-		if (selected)
+	/// <summary>Called by SelectionManager: only the primary character drives the shared status bars and skills panel.</summary>
+	public void SetShownInHud(bool shown)
+	{
+		shownInHud = shown;
+
+		if (shown)
 		{
 			if (skillSet == null)
 				Debug.LogWarning($"[SkillsPanel] {characterName} has no SkillSet component — skills panel will stay blank.");
@@ -235,17 +242,17 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		MoveTo(position);
 	}
 
-	public void InteractWith(IInteractable target, string actionId)
+	public void InteractWith(IInteractable target, InteractionOption option)
 	{
 		if (!IsAlive)
 			return;
 
 		CancelCurrentAction();
 
-		if (IsAttackAction(actionId))
-			combatLoopRoutine = StartCoroutine(CombatLoop(target, actionId));
+		if (option.kind == InteractionKind.Attack)
+			combatLoopRoutine = StartCoroutine(CombatLoop(target, option.id));
 		else
-			StartCoroutine(MoveAndPerform(target, actionId));
+			StartCoroutine(MoveAndPerform(target, option.id));
 	}
 
 	public bool IsAlive => stats == null || stats.IsAlive;
@@ -254,7 +261,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	{
 		CancelCurrentAction();
 		if (isSelected)
-			SetSelected(false); // hides the ring, unbinds the skills panel
+			SetSelected(false); // hides the ring; SelectionManager moves the HUD on next frame
 		Ring.SetPreview(false);
 
 		// Gear goes into the bag so the body can be looted.
@@ -346,14 +353,6 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		combatLoopRoutine = null;
 		combatOpponent = null;
 		ReleaseReservedSlot();
-	}
-
-	private static bool IsAttackAction(string actionId)
-	{
-		if (string.IsNullOrWhiteSpace(actionId))
-			return false;
-
-		return actionId.IndexOf("attack", System.StringComparison.OrdinalIgnoreCase) >= 0;
 	}
 
 	private IEnumerator MoveAndPerform(IInteractable target, string actionId)

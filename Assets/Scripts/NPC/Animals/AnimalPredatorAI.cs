@@ -115,6 +115,15 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
         equipment = GetComponent<EquipmentManager>();
     }
 
+    private void OnEnable()
+    {
+        if (stats != null)
+        {
+            stats.OnDamaged += HandleDamaged;
+            stats.OnDied += HandleDied;
+        }
+    }
+
     private void Start()
     {
         if (personality == null)
@@ -127,12 +136,6 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
         if (combatFormulaConfig == null)
         {
             Debug.LogWarning($"[AnimalPredatorAI] '{name}' has no CombatFormulaConfig assigned. Predator will only chase/flee.", this);
-        }
-
-        if (stats != null)
-        {
-            stats.OnDamaged += HandleDamaged;
-            stats.OnDied += HandleDied;
         }
 
         sprintSecondsLeft = personality.fleeSprintSeconds;
