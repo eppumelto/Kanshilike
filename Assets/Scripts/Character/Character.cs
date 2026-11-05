@@ -7,7 +7,7 @@ using UnityEngine.AI;
 /// lives in PlayerControllable and the on-screen status in CharacterHud, so a Character with no
 /// player attached (a bandit, a trader) works the same way.
 /// </summary>
-public class Character : CombatActor, ICombatAnimationEventSource
+public class Character : CombatActor
 {
 	public string characterName;
 
@@ -21,9 +21,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	private Transform lastAttacker;
 	private float lastAttackedTime;
 
-	// Athletics XP: award XP per unit of distance traveled
 	private Vector3 lastPosition;
-	private const float AthleticsXPPerUnit = 0.05f;
 
 	[Tooltip("World-space Canvas prefab shown above the character while harvesting. Assign the HarvestingLabel prefab here.")]
 	[SerializeField] private GameObject harvestingLabelPrefab;
@@ -48,8 +46,14 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	[Header("Carrying")]
 	[Tooltip("Kilograms an untrained character carries before slowing down badly. Strength raises it (x2 at master level).")]
 	[SerializeField, Min(1f)] private float baseCarryCapacity = 30f;
-	// Strength XP per unit walked under a heavy load (scaled by how heavy).
-	private const float StrengthXPPerUnit = 0.1f;
+
+	[Header("Training")]
+	[Tooltip("Athletics XP per meter walked.")]
+	[SerializeField, Min(0f)] private float athleticsXPPerMeter = 0.05f;
+	[Tooltip("Strength XP per meter walked under a heavy load, scaled by how heavy.")]
+	[SerializeField, Min(0f)] private float strengthXPPerLoadedMeter = 0.1f;
+	[Tooltip("Harvesting XP per item harvested.")]
+	[SerializeField, Min(0f)] private float harvestXP = 15f;
 	private float baseMoveSpeed;
 
 	/// <summary>Kilograms in the inventory plus everything equipped.</summary>
@@ -92,10 +96,6 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	public override bool CanDodge => true;
 	public override bool CanCounter => canCounter;
 
-	public event System.Action<CombatAnimationEventArgs> OnAttackWindup;
-	public event System.Action<CombatAnimationEventArgs> OnAttackImpact;
-	public event System.Action<CombatAnimationEventArgs> OnReactionResolved;
-
 	void Start()
 	{
 		agent = GetComponent<NavMeshAgent>();
@@ -118,11 +118,11 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		float encumbrance = Encumbrance;
 		if (moved > 0.01f)
 		{
-			skills?.GainXP(SkillType.Athletics, moved * AthleticsXPPerUnit);
+			skills?.GainXP(SkillType.Athletics, moved * athleticsXPPerMeter);
 
 			// Kenshi-style: hauling a heavy load trains Strength.
 			if (encumbrance > 0.5f)
-				skills?.GainXP(SkillType.Strength, moved * StrengthXPPerUnit * Mathf.Min(2f, (encumbrance - 0.5f) * 2f));
+				skills?.GainXP(SkillType.Strength, moved * strengthXPPerLoadedMeter * Mathf.Min(2f, (encumbrance - 0.5f) * 2f));
 
 			lastPosition = transform.position;
 		}
@@ -327,24 +327,20 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		if (Vector3.Distance(transform.position, target.transform.position) > profile.Range)
 			return;
 
-		OnAttackWindup?.Invoke(new CombatAnimationEventArgs(gameObject, target.gameObject, CombatReactionType.None, 0f));
-
 		if (bow != null)
 		{
 			CharacterArchery.Shoot(this, target, bow, profile);
 			return;
 		}
 
-		CombatExchangeResult result = ResolveStrike(target, profile, combatFormulaConfig,
-			reaction => OnReactionResolved?.Invoke(new CombatAnimationEventArgs(gameObject, target.gameObject, reaction, 0f)));
+		CombatExchangeResult result = ResolveStrike(target, profile, combatFormulaConfig);
 
 		if (result.HitLanded)
 		{
-			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, target.gameObject, result.Reaction, result.DamageDealt));
 			string defense = result.Reaction == CombatReactionType.None ? "undefended" : $"{result.Reaction} failed";
 			Debug.Log($"[Combat] {characterName} hit {target.name} for {result.DamageDealt:F1} ({defense}).");
-			skills?.GainXP(profile.UsedWeaponSkill, 10f);
-			skills?.GainXP(SkillType.Strength, 2f);
+			skills?.GainXP(profile.UsedWeaponSkill, combatFormulaConfig.meleeHitXP);
+			skills?.GainXP(combatFormulaConfig.strengthSkill, combatFormulaConfig.meleeHitStrengthXP);
 		}
 		else
 		{
@@ -352,7 +348,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 				Debug.Log($"[Combat] {characterName}'s attack was countered for {result.CounterDamage:F1} damage.");
 
 			Debug.Log($"[Combat] {characterName}'s attack was prevented by {result.Reaction}.");
-			skills?.GainXP(profile.UsedWeaponSkill, 3f);
+			skills?.GainXP(profile.UsedWeaponSkill, combatFormulaConfig.meleeMissXP);
 		}
 	}
 
@@ -363,18 +359,16 @@ public class Character : CombatActor, ICombatAnimationEventSource
 			return;
 
 		GameObject defenderObject = defender.ActorTransform.gameObject;
-		OnReactionResolved?.Invoke(new CombatAnimationEventArgs(gameObject, defenderObject, result.Reaction, 0f));
 
 		if (result.HitLanded)
 		{
-			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, defenderObject, result.Reaction, result.DamageDealt));
 			Debug.Log($"[Combat] {characterName}'s arrow hit {defenderObject.name} for {result.DamageDealt:F1}.");
-			skills?.GainXP(skill, 10f);
+			skills?.GainXP(skill, combatFormulaConfig.arrowHitXP);
 		}
 		else
 		{
 			Debug.Log($"[Combat] {characterName}'s arrow was blocked by {defenderObject.name}.");
-			skills?.GainXP(skill, 3f);
+			skills?.GainXP(skill, combatFormulaConfig.arrowBlockedXP);
 		}
 	}
 
@@ -396,7 +390,7 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	/// Harvests one item into this character's inventory and grants Harvesting XP. Returns false
 	/// if it did not fit.
 	/// </summary>
-	public bool collectItem(Item item, float harvestXP = 15f)
+	public bool collectItem(Item item)
 	{
 		if (CollectItems(item, 1) <= 0)
 			return false;
@@ -430,39 +424,19 @@ public class Character : CombatActor, ICombatAnimationEventSource
 	}
 
 	/// <summary>
-	/// Eats or drinks one item from a stack in this character's inventory. Returns false if
-	/// it holds nothing consumable.
+	/// Uses one item from a stack in this character's inventory: eats it, drinks it, equips it,
+	/// binds a wound with it... Each item type decides what using it means (Item.TryUse).
 	/// </summary>
-	public bool TryConsume(Inventory.Entry entry)
+	public bool TryUseItem(Inventory.Entry entry, out string reason)
 	{
-		if (inventory == null || !IsAlive || !inventory.Contains(entry))
-			return false;
-
-		if (entry.item is FoodItem food)
+		reason = null;
+		if (inventory == null || !IsAlive || entry == null || !inventory.Contains(entry))
 		{
-			Eat(food.nutritionValue);
-			inventory.RemoveOne(entry);
-		}
-		else if (entry.item is DrinkItem drink)
-		{
-			Drink(drink.hydrationValue);
-			Vector2Int pos = entry.position;
-			bool rotated = entry.rotated;
-			bool lastOne = entry.count == 1;
-			inventory.RemoveOne(entry);
-
-			// Keep the empty container (waterskin) so it can be refilled at a well,
-			// in the same spot when that was the last one of the stack.
-			Item empty = drink.emptyContainer;
-			if (empty != null
-				&& !(lastOne && inventory.Place(empty, 1, pos, rotated))
-				&& !inventory.AddItem(empty))
-				ShowFloatingText($"No room, dropped {empty.itemName}", 2f);
-		}
-		else
+			reason = "Can't use that";
 			return false;
+		}
 
-		return true;
+		return entry.item.TryUse(this, entry, out reason);
 	}
 
 	/// <summary>
@@ -529,14 +503,14 @@ public class Character : CombatActor, ICombatAnimationEventSource
 		{
 			var food = inventory.FindFirst<FoodItem>();
 			if (food != null)
-				TryConsume(food);
+				TryUseItem(food, out _);
 		}
 
 		if (stats.thirst < autoDrinkBelow)
 		{
 			var drink = inventory.FindFirst<DrinkItem>();
 			if (drink != null)
-				TryConsume(drink);
+				TryUseItem(drink, out _);
 		}
 	}
 

@@ -11,6 +11,11 @@ public class HealingItem : Item
 	[Tooltip("Text shown above the character while treating.")]
 	public string progressLabel = "Binding wounds...";
 
+	public override bool TryUse(Character user, Inventory.Entry entry, out string reason)
+	{
+		return user.TryTreatWounds(entry, out reason);
+	}
+
 	// Called when the asset is created or reset in the editor.
 	private void Reset() => maxStack = 10;
 }

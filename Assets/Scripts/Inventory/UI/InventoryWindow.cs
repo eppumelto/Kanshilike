@@ -201,12 +201,8 @@ public class InventoryWindow : MonoBehaviour
 			var looterInventory = looter != null ? looter.GetComponent<Inventory>() : null;
 			InventoryActions.TryQuickMove(inventory, entry, looterInventory, out reason);
 		}
-		else if (entry.item is EquippableItem)
-			InventoryActions.TryEquip(inventory, entry, equipment, inventory, out reason);
-		else if (entry.item is HealingItem)
-			character.TryTreatWounds(entry, out reason);
-		else if (!character.TryConsume(entry))
-			reason = $"Can't use {entry.item.itemName}";
+		else
+			character.TryUseItem(entry, out reason);
 
 		ShowMessage(reason);
 	}

@@ -156,26 +156,30 @@ already moved out of `Character`, so nothing scene-only should be needed on it.
 
 ## Smaller risks
 
-- **Dev tooling in demo builds:** `Assets/Plugins/NuGet/McpPlugin.dll.meta` enables the DLL for
-  all platforms, and the MCP runtime assembly definition excludes none. MCP and its networking
-  DLLs (45 DLLs, 19 MB) may ship in player builds. This has not been confirmed with a real
-  build. Do a test build before the first play-test.
-- **Behaviour isn't testable yet:** the combat maths is tested now, but the test assembly still
-  can't reference `Assembly-CSharp`, so orders and self-defence can only be checked in Play mode,
-  and the wiring tests search scene and source files as text.
-- **`Character` size:** down to 562 lines from 805, with orders and archery in their own files.
-  Keep new behaviour in orders rather than adding it back.
-- **Item use is spread out:** `TryConsume`, `TryTreatWounds` and `InventoryWindow` each check item
-  types separately, so every usable item adds another branch.
-- **Game logic tied to UI:** `CharacterStats` creates the corpse, and `Corpse` opens the inventory
-  screen directly.
-- **Combat events:** `OnAttackWindup` and the related events have no subscribers, only `Character`
-  raises them, and no script uses an `Animator`. Damage is applied instantly, so timing it to an
-  animation will mean separating "resolve" from "apply".
-- **Hardcoded XP:** attacker XP is written into `Character`, while defender XP lives in the config.
-- **Repo housekeeping:**
-  - There is no `.gitattributes`.
-  - `Old/` still compiles, and only `SampleScene` uses it.
+- **`Character` size:** 536 lines, down from 805, with orders, archery and item use in their own
+  places. Keep new behaviour in orders and item types rather than adding it back.
+- **Damage is instant:** there are no animations yet. When they arrive, give people and animals one
+  event seam for wind-up and impact, and split "resolve" from "apply" so damage lands on the impact.
+- **Play-mode tests are scene-free:** they build characters in code with no NavMesh, so walking,
+  chasing and archery are still only checked by hand.
+
+### Resolved on 2026-11-05
+
+- **Dev tooling in demo builds:** the MCP runtime doesn't start itself, but its code and NuGet DLLs
+  used to ship. **Kanshilike > Build Windows Demo** (`Assets/Editor/DemoBuild.cs`) builds with the
+  package's `UNITY_MCP_EXCLUDE_FROM_COMPILATION` switch and removes the plugin's unused libraries,
+  after checking that nothing in the build refers to them. A test build ran with no load errors.
+- **Behaviour testing:** game code is in the `Kanshilike.Game` assembly, so tests can reach it.
+  `Assets/Tests/PlayMode` covers orders, self-defence, sleep, treatment, item use and corpses.
+- **Item use:** each item type decides what using it means through `Item.TryUse`, and
+  `Character.TryUseItem` is the one way in, for the inventory window and automatic eating alike.
+- **Game logic tied to UI:** `CombatActor` leaves the corpse, and `Corpse` raises `LootRequested`,
+  which the inventory screen listens to.
+- **Unused combat events:** removed, since nothing listened and nothing animates yet.
+- **Hardcoded XP:** combat XP is in `CombatFormulaConfig`; walking, hauling and harvesting XP are
+  per-character settings under **Training**.
+- **Repo housekeeping:** `.gitattributes` added; `Old/` and `SampleScene`, which only ran the
+  old generators, removed (they are in git history).
 
 ## Deliberately left for later
 
@@ -184,7 +188,7 @@ None of these affect whether the feud idea is fun, so they can wait until the de
 - Save system and stable item IDs (the plan says the demo needs no saving)
 - World streaming
 - Throttling animal perception, which runs an allocating physics search per animal per frame
-- A project-wide asmdef split
+- Splitting `Kanshilike.Game` into smaller assemblies
 - Replacing the `OnGUI` game-over screen, or unifying the three UI styles
 
 ## Recommended order
