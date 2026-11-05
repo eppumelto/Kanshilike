@@ -2,11 +2,11 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// FSM-based predator behaviour.
+/// FSM-based animal behaviour, for predators and prey alike. The personality and behaviour profile decide which.
 ///
 ///  Idle ↔ Roaming  (default roaming loop)
 ///  Any  → Alert    (player spotted)
-///  Alert → Fleeing (shy predator) | Chasing (brave predator)
+///  Alert → Fleeing (shy animal) | Chasing (brave animal)
 ///  Fleeing / Chasing → Idle (player lost)
 ///
 /// Requires: NavMeshAgent on the same GameObject.
@@ -14,7 +14,7 @@ using UnityEngine.AI;
 /// Player characters need a SelectableCharacter component.
 /// </summary>
 [RequireComponent(typeof(NavMeshAgent))]
-public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
+public class AnimalAI : MonoBehaviour, ICombatActor, INaturalAttacker
 {
     // ------------------------------------------------------------------ //
     //  Inspector
@@ -128,14 +128,14 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
     {
         if (personality == null)
         {
-            Debug.LogWarning($"[AnimalPredatorAI] '{name}' has no AnimalPersonality assigned. Disabling.", this);
+            Debug.LogWarning($"[AnimalAI] '{name}' has no AnimalPersonality assigned. Disabling.", this);
             enabled = false;
             return;
         }
 
         if (combatFormulaConfig == null)
         {
-            Debug.LogWarning($"[AnimalPredatorAI] '{name}' has no CombatFormulaConfig assigned. Predator will only chase/flee.", this);
+            Debug.LogWarning($"[AnimalAI] '{name}' has no CombatFormulaConfig assigned. Animal will only chase/flee.", this);
         }
 
         sprintSecondsLeft = personality.fleeSprintSeconds;
@@ -502,7 +502,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
         // State label
         UnityEditor.Handles.Label(
             transform.position + Vector3.up * 2.2f,
-            Application.isPlaying ? currentState.ToString() : "AnimalPredatorAI"
+            Application.isPlaying ? currentState.ToString() : "AnimalAI"
         );
     }
 #endif

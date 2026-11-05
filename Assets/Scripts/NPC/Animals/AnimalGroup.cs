@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public sealed class AnimalGroup
 {
-    private readonly List<AnimalPredatorAI> members = new List<AnimalPredatorAI>();
+    private readonly List<AnimalAI> members = new List<AnimalAI>();
     private readonly Vector3 home;
     private readonly float memberSpread;
     private readonly float waypointInterval;
@@ -28,13 +28,13 @@ public sealed class AnimalGroup
         waypoint = home;
     }
 
-    public void Add(AnimalPredatorAI member)
+    public void Add(AnimalAI member)
     {
         if (!members.Contains(member))
             members.Add(member);
     }
 
-    public void Remove(AnimalPredatorAI member)
+    public void Remove(AnimalAI member)
     {
         members.Remove(member);
     }
@@ -53,9 +53,9 @@ public sealed class AnimalGroup
     }
 
     /// <summary>Tells the other members about a character one member has seen or been hit by.</summary>
-    public void Alert(AnimalPredatorAI sender, SelectableCharacter character)
+    public void Alert(AnimalAI sender, SelectableCharacter character)
     {
-        foreach (AnimalPredatorAI member in members)
+        foreach (AnimalAI member in members)
         {
             if (member != sender)
                 member.ReceiveGroupAlert(character);

@@ -4876,9 +4876,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1633399486}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5aa2d74a66c07404382d74fa3ddef937, type: 3}
+  m_Script: {fileID: 11500000, guid: d64c21433fc681640a825d98317d0a0f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WolfAI
+  m_EditorClassIdentifier: Assembly-CSharp::AnimalAI
   personality: {fileID: 11400000, guid: f7882aa88ce26614a8ee308673fe44b6, type: 2}
   behaviorProfile: {fileID: 0}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}

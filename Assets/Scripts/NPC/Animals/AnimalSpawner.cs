@@ -117,11 +117,10 @@ public class AnimalSpawner : MonoBehaviour
             GameObject animal = Instantiate(animalPrefab, GetMemberPosition(centre, i), rotation, transform);
             animal.name = lone ? $"Lone {animalPrefab.name}" : $"Group {groupCentres.Count} {animalPrefab.name} {i + 1}";
 
-            // WolfAI adds AnimalPredatorAI in OnEnable, which has already run by now.
-            if (animal.TryGetComponent(out AnimalPredatorAI predator))
-                predator.JoinGroup(group);
+            if (animal.TryGetComponent(out AnimalAI animalAI))
+                animalAI.JoinGroup(group);
             else
-                Debug.LogWarning($"[AnimalSpawner] '{animalPrefab.name}' has no AnimalPredatorAI, so it can't join a group.", this);
+                Debug.LogWarning($"[AnimalSpawner] '{animalPrefab.name}' has no AnimalAI, so it can't join a group.", this);
         }
 
         string personalityName = personality != null ? personality.name : "prefab personality";

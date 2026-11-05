@@ -222,7 +222,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d64c21433fc681640a825d98317d0a0f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AnimalPredatorAI
+  m_EditorClassIdentifier: Assembly-CSharp::AnimalAI
   personality: {fileID: 11400000, guid: 43ef7ae1bab5d4b4c848b9efe0521245, type: 2}
   behaviorProfile: {fileID: 11400000, guid: 1c719b8af398feb4589fbcb8796fef30, type: 2}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
