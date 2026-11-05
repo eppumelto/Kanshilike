@@ -2,7 +2,8 @@
 name: tests-run
 description: "Execute Unity tests (`EditMode` or `PlayMode`) and return per-test results. Supports filtering by test assembly, namespace, class, and method. Refreshes the AssetDatabase first; defers execution across domain reloads if scripts changed. Precondition: every open scene must be saved — dirty scenes abort the run."
 metadata:
-  generated-by: mcp-plugin-dotnet
+  generated-by: unity-mcp
+  ai-game-dev: exclude
 ---
 
 # Tests / Run
@@ -12,7 +13,7 @@ Execute Unity tests and return detailed results. Supports filtering by test mode
 ## Filters
 
 - `testMode` (default `EditMode`) — `EditMode` or `PlayMode`. EditMode is faster; prefer it during iteration.
-- `testAssembly` / `testNamespace` / `testClass` / `testMethod` — optional, layered filters. Namespace and class filters become regex `groupNames` so the validation count and Unity's execution stay in sync. `testMethod` must be fully qualified (`Namespace.FixtureName.TestName`).
+- `testAssembly` / `testNamespace` / `testClass` / `testMethod` — optional filters, combined as Unity's Test Runner combines them: every given filter must match, except that `testNamespace` and `testClass` match when either does. `testMethod` is the case-sensitive full name (`Namespace.FixtureName.TestName`); a parameterized method runs all its cases. Filters that select no test are refused before the run.
 - `query` — RQL over the `tests` source instead of the four filters: any selection, run as ONE Test Runner run, e.g. `tests | where fixture == "PlayerTests" or categories contains "Smoke"`. One mode per run; the mode comes from the selected tests. Explore first with rql-query: `tests | where fullName contains "Spline" | select fullName mode`.
 - `result` — RQL stages applied to the results (source `testResults`: name status durationMs message stackTrace), e.g. `where status == "Failed" | select name message`; the answer is then a summary line plus compact RQL text.
 
@@ -31,8 +32,9 @@ If the AssetDatabase refresh triggers compilation, the tool persists the run par
 
 ## How to Call
 
-```bash
-unity-mcp-cli run-tool tests-run --input '{
+```powershell
+[System.IO.File]::WriteAllText((Join-Path $PWD 'args.json'), @'
+{
   "testMode": "string_value",
   "testAssembly": "string_value",
   "testNamespace": "string_value",
@@ -46,26 +48,13 @@ unity-mcp-cli run-tool tests-run --input '{
   "includeLogs": false,
   "logType": "string_value",
   "includeLogsStacktrace": false
-}'
+}
+'@)
+unity-mcp-cli.cmd run-tool tests-run --input-file args.json
 ```
 
-> For complex input (multi-line strings, code), save the JSON to a file and use:
-> ```bash
-> unity-mcp-cli run-tool tests-run --input-file args.json
-> ```
->
-> Or pipe via stdin (recommended):
-> ```bash
-> unity-mcp-cli run-tool tests-run --input-file - <<'EOF'
-> {"param": "value"}
-> EOF
-> ```
-
-
-### Troubleshooting
-
-If `unity-mcp-cli` is not found, either install it globally (`npm install -g unity-mcp-cli`) or use `npx unity-mcp-cli` instead.
-Read the /unity-initial-setup skill for detailed installation instructions.
+> CLI installation and usage: see the `unity-cli` skill.
+> If this task needs unavailable asset-generation or Blender tools, consult `ai-game-dev-app` for an optional integrated workflow.
 
 ## Input
 

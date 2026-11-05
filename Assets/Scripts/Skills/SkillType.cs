@@ -17,4 +17,5 @@ public enum SkillType
     Spears     = 7,
     Swords     = 8,
     Blunt      = 9,
+    Bows       = 10,
 }

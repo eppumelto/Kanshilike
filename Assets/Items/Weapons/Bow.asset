@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c06be86555713a4d89ab9729ddbd8e8, type: 3}
+  m_Name: Bow
+  m_EditorClassIdentifier: Assembly-CSharp::BowItem
+  itemName: Bow
+  icon: {fileID: 21300000, guid: f6a8bcd7a0de4ab5eb6dcf8a7c9eb5d6, type: 3}
+  description:
+  maxStack: 1
+  size: {x: 2, y: 4}
+  weight: 1.2
+  equipSlot: 0
+  equippedPrefab: {fileID: 0}
+  weaponPrefab: {fileID: 5100000000000000001, guid: e5b7abc69fcd4ba4da5cbe7f6b8da4c5, type: 3}
+  weaponSkill: 10
+  damage: 14
+  attackRange: 25
+  attackSpeedMultiplier: 0.6
+  twoHanded: 1
+  arrowSpeed: 30
+  untrainedSpread: 3
+  masterSpread: 0.75
+  movingTargetSpread: 1
+  movingTargetSpeed: 5

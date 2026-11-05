@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: affcca13e3b3d704a8c92090b228554f, type: 3}
+  m_Name: Sword
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponItem
+  itemName: Sword
+  icon: {fileID: 0}
+  description:
+  maxStack: 1
+  size: {x: 1, y: 4}
+  weight: 2
+  equipSlot: 0
+  equippedPrefab: {fileID: 0}
+  weaponPrefab: {fileID: 6340506079324150691, guid: d1af976613db4fffb69f613a7db3a76d, type: 3}
+  weaponSkill: 8
+  damage: 10
+  attackRange: 1.5
+  attackSpeedMultiplier: 1
+  twoHanded: 0

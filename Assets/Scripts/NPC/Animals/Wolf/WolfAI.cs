@@ -39,6 +39,7 @@ public class WolfAI : MonoBehaviour, ICombatActor, INaturalAttacker
     public EquipmentManager Equipment => predatorAI != null ? predatorAI.Equipment : null;
     public bool CanUseEquipment => predatorAI != null && predatorAI.CanUseEquipment;
     public bool CanBlock => predatorAI != null && predatorAI.CanBlock;
+    public bool CanDodge => predatorAI != null && predatorAI.CanDodge;
     public bool CanCounter => predatorAI != null && predatorAI.CanCounter;
     public NaturalAttack NaturalAttack => naturalAttack;
 

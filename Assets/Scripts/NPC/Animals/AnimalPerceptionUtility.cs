@@ -1,20 +1,20 @@
 using UnityEngine;
 
-public readonly struct WolfDetectionResult
+public readonly struct AnimalDetectionResult
 {
     public Transform Target { get; }
     public SelectableCharacter Character { get; }
 
-    public WolfDetectionResult(Transform target, SelectableCharacter character)
+    public AnimalDetectionResult(Transform target, SelectableCharacter character)
     {
         Target = target;
         Character = character;
     }
 }
 
-public static class WolfPerceptionUtility
+public static class AnimalPerceptionUtility
 {
-    public static WolfDetectionResult DetectNearestTarget(
+    public static AnimalDetectionResult DetectNearestTarget(
         Transform self,
         AnimalPersonality personality,
         Transform forcedAggroTarget,
@@ -64,6 +64,6 @@ public static class WolfPerceptionUtility
             nearest = forcedAggroTarget;
 
         SelectableCharacter character = nearest != null ? nearest.GetComponent<SelectableCharacter>() : null;
-        return new WolfDetectionResult(nearest, character);
+        return new AnimalDetectionResult(nearest, character);
     }
 }

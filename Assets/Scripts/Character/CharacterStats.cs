@@ -38,6 +38,15 @@ public class CharacterStats : MonoBehaviour
 
 	public void NotifyAttacked(GameObject attacker, bool blockedWithShield) => OnAttacked?.Invoke(attacker, blockedWithShield);
 
+	/// <summary>How much wounds have slowed this entity: 1 is unhurt. Animals move at this fraction of their speed.</summary>
+	public float WoundSpeedMultiplier { get; private set; } = 1f;
+
+	/// <summary>Multiplies the wound slowdown, which lasts until death and never goes below the minimum.</summary>
+	public void Wound(float speedMultiplier, float minSpeedMultiplier)
+	{
+		WoundSpeedMultiplier = Mathf.Min(WoundSpeedMultiplier, Mathf.Max(minSpeedMultiplier, WoundSpeedMultiplier * speedMultiplier));
+	}
+
 	void Start()
 	{
 		currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);

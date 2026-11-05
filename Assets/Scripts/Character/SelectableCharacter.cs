@@ -24,6 +24,14 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	private Transform lastAttacker;
 	private float lastAttackedTime;
 
+	private const float MaxShootingAngle = 15f;
+	private const float ArrowSpawnForward = 0.6f;
+	private const float ArrowSpawnUp = 0.3f;
+	private const float ArrowShotXP = 2f;
+	private const float DefaultBodyRadius = 0.5f;
+	// Shared by all characters: only used within a single check.
+	private static readonly RaycastHit[] ClearShotHits = new RaycastHit[16];
+
 	// Athletics XP: award XP per unit of distance traveled
 	private Vector3 lastPosition;
 	private const float AthleticsXPPerUnit = 0.05f;
@@ -91,6 +99,7 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 	public EquipmentManager Equipment => equipmentManager;
 	public bool CanUseEquipment => canUseEquipment;
 	public bool CanBlock => canBlock;
+	public bool CanDodge => true;
 	public bool CanCounter => canCounter;
 
 	public event System.Action<CombatAnimationEventArgs> OnAttackWindup;
@@ -271,6 +280,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			yield break;
 		}
 
+		float nextShotTime = 0f;
+
 		while (IsTargetValid(target) && stats != null && stats.IsAlive)
 		{
 			if (target is not Component targetComponent)
@@ -282,8 +293,23 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 			combatOpponent = targetComponent.transform;
 
+			BowItem bow = CombatFormulaResolver.GetBow(this);
+			if (bow != null && (inventory == null || inventory.FindFirst<ArrowItem>() == null))
+			{
+				ShowFloatingText("Out of arrows", 2f);
+				break;
+			}
+
 			AttackProfile profile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
-			if (Vector3.Distance(transform.position, targetComponent.transform.position) > profile.Range)
+			float distance = Vector3.Distance(transform.position, targetComponent.transform.position);
+			if (bow != null && distance > bow.maxPursuitDistance)
+			{
+				ShowFloatingText("Target got away", 2f);
+				break;
+			}
+
+			bool inRange = distance <= profile.Range;
+			if (!inRange || (bow != null && !HasGoodShot(targetComponent, bow, distance)))
 			{
 				MoveTo(targetComponent.transform.position);
 				yield return null;
@@ -293,9 +319,29 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 			if (agent != null)
 				agent.ResetPath();
 
+			// FaceOpponent is turning us; an archer waits until the target is in front.
+			if (bow != null && (Time.time < nextShotTime || !IsFacing(targetComponent.transform.position)))
+			{
+				yield return null;
+				continue;
+			}
+
 			target.ExecuteInteraction(this, actionId);
+
+			// Between shots an archer keeps following: the checks above run again while reloading.
+			if (bow != null)
+			{
+				nextShotTime = Time.time + Mathf.Max(0.1f, profile.Interval);
+				yield return null;
+				continue;
+			}
+
 			yield return new WaitForSeconds(Mathf.Max(0.1f, profile.Interval));
 		}
+
+		// The fight is over: don't keep walking to where the target last was.
+		if (agent != null && agent.isOnNavMesh)
+			agent.ResetPath();
 
 		combatLoopRoutine = null;
 		combatOpponent = null;
@@ -409,8 +455,11 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		if (stats != null && !stats.IsAlive)
 			return;
 
+		BowItem bow = CombatFormulaResolver.GetBow(this);
+
 		// Target already has its maximum number of attackers; CombatLoop keeps us close and retries.
-		if (!TryReserveTargetSlot(targetComponent))
+		// Archers shoot from a distance, so they don't take up a place around the target.
+		if (bow == null && !TryReserveTargetSlot(targetComponent))
 			return;
 
 		AttackProfile attackerProfile = CombatFormulaResolver.BuildAttackProfile(this, combatFormulaConfig);
@@ -436,25 +485,126 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 
 		OnAttackWindup?.Invoke(new CombatAnimationEventArgs(gameObject, targetComponent.gameObject, CombatReactionType.None, 0f));
 
-		ICombatActor defender = ResolveDefender(targetComponent, defenderStats);
+		if (bow != null)
+		{
+			ShootArrow(targetComponent, bow, attackerProfile);
+			return;
+		}
+
+		ICombatActor defender = CombatExchangeResolver.ResolveDefender(targetComponent, defenderStats);
 		ResolveExchange(defender, attackerProfile, defenderStats);
 	}
 
-	private ICombatActor ResolveDefender(Component targetComponent, CharacterStats defenderStats)
+	// Spends one arrow and sends it toward where the target will be, strayed by the archer's spread.
+	private void ShootArrow(Component target, BowItem bow, AttackProfile attackProfile)
 	{
-		if (targetComponent.TryGetComponent<ICombatActor>(out var defenderActor))
-			return defenderActor;
+		Inventory.Entry arrows = inventory != null ? inventory.FindFirst<ArrowItem>() : null;
+		if (arrows == null)
+			return;
 
-		EquipmentManager defenderEquipment = targetComponent.GetComponent<EquipmentManager>();
-		bool canUseEquipmentProxy = defenderEquipment != null;
-		return new CombatActorProxy(
-			targetComponent.transform,
-			defenderStats,
-			targetComponent.GetComponent<SkillSet>(),
-			defenderEquipment,
-			canUseEquipment: canUseEquipmentProxy,
-			canBlock: canUseEquipmentProxy,
-			canCounter: true);
+		ArrowProjectile prefab = ((ArrowItem)arrows.item).projectilePrefab;
+		if (prefab == null)
+		{
+			Debug.LogWarning($"[Combat] {arrows.item.itemName} has no projectile prefab assigned.");
+			return;
+		}
+
+		inventory.RemoveOne(arrows);
+
+		Vector3 targetVelocity = VelocityOf(target);
+		Vector3 origin = BodyCenter(this) + transform.forward * ArrowSpawnForward + Vector3.up * ArrowSpawnUp;
+		Vector3 aimPoint = BodyCenter(target);
+		float flightSeconds = Vector3.Distance(origin, aimPoint) / bow.arrowSpeed;
+		aimPoint += targetVelocity * flightSeconds;
+
+		// Lobbed just enough that gravity brings it down on the aim point.
+		Vector3 velocity = (aimPoint - origin) / flightSeconds - 0.5f * flightSeconds * Physics.gravity;
+
+		float spread = CombatFormulaResolver.GetBowSpread(this, bow, combatFormulaConfig, targetVelocity.magnitude);
+		Vector2 stray = Random.insideUnitCircle * spread;
+		velocity = Quaternion.AngleAxis(stray.x, Vector3.up) * Quaternion.AngleAxis(stray.y, transform.right) * velocity;
+
+		ArrowProjectile projectile = Instantiate(prefab, origin, Quaternion.LookRotation(velocity));
+		projectile.Launch(velocity, attackProfile, combatFormulaConfig, gameObject,
+			(defender, result) => HandleArrowHit(defender, result, attackProfile.UsedWeaponSkill));
+
+		skillSet?.GainXP(attackProfile.UsedWeaponSkill, ArrowShotXP);
+	}
+
+	// Runs when the arrow lands, by which time the archer may be gone.
+	private void HandleArrowHit(ICombatActor defender, CombatExchangeResult result, SkillType skill)
+	{
+		if (this == null)
+			return;
+
+		GameObject defenderObject = defender.ActorTransform.gameObject;
+		OnReactionResolved?.Invoke(new CombatAnimationEventArgs(gameObject, defenderObject, result.Reaction, 0f));
+
+		if (result.HitLanded)
+		{
+			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, defenderObject, result.Reaction, result.DamageDealt));
+			Debug.Log($"[Combat] {characterName}'s arrow hit {defenderObject.name} for {result.DamageDealt:F1}.");
+			skillSet?.GainXP(skill, 10f);
+		}
+		else
+		{
+			Debug.Log($"[Combat] {characterName}'s arrow was blocked by {defenderObject.name}.");
+			skillSet?.GainXP(skill, 3f);
+		}
+	}
+
+	// Worth an arrow? Otherwise the archer holds fire and moves closer.
+	private bool HasGoodShot(Component target, BowItem bow, float distance)
+	{
+		if (!HasClearShot(target))
+			return false;
+
+		float chance = CombatFormulaResolver.GetBowHitChance(this, bow, combatFormulaConfig, distance, VelocityOf(target).magnitude, BodyRadius(target));
+		return chance >= bow.minHitChance;
+	}
+
+	private static Vector3 VelocityOf(Component target)
+	{
+		return target.TryGetComponent<NavMeshAgent>(out var targetAgent) ? targetAgent.velocity : Vector3.zero;
+	}
+
+	private static float BodyRadius(Component body)
+	{
+		Collider bodyCollider = body.GetComponent<Collider>();
+		if (bodyCollider == null)
+			return DefaultBodyRadius;
+
+		Vector3 extents = bodyCollider.bounds.extents;
+		return Mathf.Max(extents.x, extents.z);
+	}
+
+	// Only the world blocks a shot. Characters in the way don't stop the archer firing, and may catch the arrow.
+	private bool HasClearShot(Component target)
+	{
+		Vector3 from = BodyCenter(this);
+		Vector3 toTarget = BodyCenter(target) - from;
+		int count = Physics.RaycastNonAlloc(from, toTarget.normalized, ClearShotHits, toTarget.magnitude, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+		for (int i = 0; i < count; i++)
+		{
+			if (ClearShotHits[i].collider.GetComponentInParent<CharacterStats>() == null)
+				return false;
+		}
+
+		return true;
+	}
+
+	private bool IsFacing(Vector3 point)
+	{
+		Vector3 toPoint = point - transform.position;
+		toPoint.y = 0f;
+		return Vector3.Angle(transform.forward, toPoint) <= MaxShootingAngle;
+	}
+
+	private static Vector3 BodyCenter(Component body)
+	{
+		Collider bodyCollider = body.GetComponent<Collider>();
+		return bodyCollider != null ? bodyCollider.bounds.center : body.transform.position;
 	}
 
 	private void ResolveExchange(ICombatActor defender, AttackProfile attackerProfile, CharacterStats defenderStats)
@@ -471,7 +621,8 @@ public class SelectableCharacter : MonoBehaviour, ICombatActor, ICombatAnimation
 		if (result.HitLanded)
 		{
 			OnAttackImpact?.Invoke(new CombatAnimationEventArgs(gameObject, defender.ActorTransform.gameObject, result.Reaction, result.DamageDealt));
-			Debug.Log($"[Combat] {characterName} hit for {result.DamageDealt:F1} ({result.Reaction} failed).");
+			string defense = result.Reaction == CombatReactionType.None ? "undefended" : $"{result.Reaction} failed";
+			Debug.Log($"[Combat] {characterName} hit for {result.DamageDealt:F1} ({defense}).");
 			skillSet?.GainXP(attackerProfile.UsedWeaponSkill, 10f);
 			skillSet?.GainXP(SkillType.Strength, 2f);
 		}

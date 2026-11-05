@@ -53,7 +53,10 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
     /// </summary>
     private Transform threat;
     private SelectableCharacter threatCharacter;
-    private readonly WolfAggroMemory aggroMemory = new WolfAggroMemory();
+    private readonly AnimalAggroMemory aggroMemory = new AnimalAggroMemory();
+
+    /// <summary>The group this predator belongs to. Null for one placed by hand in a scene.</summary>
+    private AnimalGroup group;
 
     private CharacterStats stats;
     private SkillSet skills;
@@ -67,6 +70,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
     public EquipmentManager Equipment => equipment;
     public bool CanUseEquipment => false;
     public bool CanBlock => personality != null && personality.canBlock;
+    public bool CanDodge => personality != null && personality.canDodge;
     public bool CanCounter => personality == null || personality.canCounter;
     public NaturalAttack NaturalAttack => naturalAttack;
 
@@ -75,6 +79,15 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
     /// <summary>Brief pause before entering Fleeing/Chasing after Alert.</summary>
     private float alertTimer;
+
+    /// <summary>Seconds of full-speed fleeing left. Only used when the personality has a sprint limit.</summary>
+    private float sprintSecondsLeft;
+
+    /// <summary>Speed the current state asks for, before wounds slow it down.</summary>
+    private float baseSpeed;
+
+    private bool CanTire => personality.fleeSprintSeconds > 0f;
+    private float FleeSpeed => CanTire && sprintSecondsLeft <= 0f ? personality.tiredFleeSpeed : personality.reactionSpeed;
 
     private float AlertDuration => behaviorProfile != null ? behaviorProfile.alertDuration : 0.4f;
 
@@ -85,7 +98,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
             if (behaviorProfile != null)
                 return behaviorProfile.ShouldChase(personality);
 
-            return WolfDecisionUtility.ShouldEnterChasing(personality);
+            return AnimalDecisionUtility.ShouldEnterChasing(personality);
         }
     }
 
@@ -122,6 +135,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
             stats.OnDied += HandleDied;
         }
 
+        sprintSecondsLeft = personality.fleeSprintSeconds;
         ApplyBaseAgentSettings();
         EnterIdle();
     }
@@ -132,7 +146,26 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
             return;
 
         DetectPlayer();
+        TickStamina();
         TickState();
+
+        agent.speed = baseSpeed * (stats != null ? stats.WoundSpeedMultiplier : 1f);
+    }
+
+    private void TickStamina()
+    {
+        if (!CanTire)
+            return;
+
+        if (currentState == PredatorState.Fleeing)
+        {
+            sprintSecondsLeft = Mathf.Max(0f, sprintSecondsLeft - Time.deltaTime);
+            baseSpeed =FleeSpeed;
+            return;
+        }
+
+        float recoveryPerSecond = personality.fleeSprintSeconds / Mathf.Max(0.01f, personality.staminaRecoverySeconds);
+        sprintSecondsLeft = Mathf.Min(personality.fleeSprintSeconds, sprintSecondsLeft + recoveryPerSecond * Time.deltaTime);
     }
 
     // ------------------------------------------------------------------ //
@@ -146,7 +179,9 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
     /// </summary>
     private void DetectPlayer()
     {
-        WolfDetectionResult detection = WolfPerceptionUtility.DetectNearestTarget(
+        bool hasAggroMemory = aggroMemory.TryGetLiveTarget(Time.time, out _, out _);
+
+        AnimalDetectionResult detection = AnimalPerceptionUtility.DetectNearestTarget(
             transform,
             personality,
             aggroMemory.Target,
@@ -154,13 +189,18 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
             aggroMemory.Until,
             Time.time);
 
-        aggroMemory.TryGetLiveTarget(Time.time, out _, out _);
-
         detectedTarget = detection.Target;
         detectedCharacter = detection.Character;
 
-        if (detectedTarget != null)
-            SetThreat(detectedTarget, detectedCharacter);
+        if (detectedTarget == null)
+            return;
+
+        SetThreat(detectedTarget, detectedCharacter);
+
+        // Only a real sighting alerts the group. Passing on a remembered alert would let
+        // members keep each other's aggro alive forever.
+        if (!hasAggroMemory)
+            group?.Alert(this, detectedCharacter);
     }
 
     private void SetThreat(Transform target, SelectableCharacter character)
@@ -195,25 +235,25 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
         SetThreat(null, null);
         currentState = PredatorState.Idle;
         agent.ResetPath();
-        agent.speed = personality.roamSpeed;
+        baseSpeed =personality.roamSpeed;
         idleTimer = Random.Range(personality.idleTimeMin, personality.idleTimeMax);
     }
 
     private void TickIdle()
     {
-        WolfStateTransition transition = WolfPassiveStateExecutor.TickIdle(detectedTarget, ref idleTimer);
-        if (transition == WolfStateTransition.EnterAlert)
+        AnimalStateTransition transition = AnimalPassiveStateExecutor.TickIdle(detectedTarget, ref idleTimer);
+        if (transition == AnimalStateTransition.EnterAlert)
         {
             EnterAlert();
             return;
         }
 
-        if (transition != WolfStateTransition.EnterRoaming)
+        if (transition != AnimalStateTransition.EnterRoaming)
             return;
 
-        if (WolfNavigationUtility.TryGetRoamPoint(spawnOrigin, personality.roamRadius, out Vector3 roamPoint))
+        if (TryGetRoamPoint(out Vector3 roamPoint))
         {
-            agent.speed = personality.roamSpeed;
+            baseSpeed =personality.roamSpeed;
             agent.SetDestination(roamPoint);
             currentState = PredatorState.Roaming;
             return;
@@ -229,14 +269,14 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
     private void TickRoaming()
     {
-        WolfStateTransition transition = WolfPassiveStateExecutor.TickRoaming(detectedTarget, agent);
-        if (transition == WolfStateTransition.EnterAlert)
+        AnimalStateTransition transition = AnimalPassiveStateExecutor.TickRoaming(detectedTarget, agent);
+        if (transition == AnimalStateTransition.EnterAlert)
         {
             EnterAlert();
             return;
         }
 
-        if (transition == WolfStateTransition.EnterIdle)
+        if (transition == AnimalStateTransition.EnterIdle)
             EnterIdle();
     }
 
@@ -253,10 +293,10 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
     private void TickAlert()
     {
-        WolfStateTransition transition = WolfPassiveStateExecutor.TickAlert(ref alertTimer, ShouldChaseOnThreat);
-        if (transition == WolfStateTransition.EnterChasing)
+        AnimalStateTransition transition = AnimalPassiveStateExecutor.TickAlert(ref alertTimer, ShouldChaseOnThreat);
+        if (transition == AnimalStateTransition.EnterChasing)
             EnterChasing();
-        else if (transition == WolfStateTransition.EnterFleeing)
+        else if (transition == AnimalStateTransition.EnterFleeing)
             EnterFleeing();
     }
 
@@ -268,14 +308,14 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
     {
         ReleaseCombatSlot();
         currentState = PredatorState.Fleeing;
-        agent.speed = personality.reactionSpeed;
+        baseSpeed =FleeSpeed;
         agent.acceleration = personality.acceleration;
     }
 
     private void TickFleeing()
     {
-        WolfStateTransition transition = WolfPassiveStateExecutor.TickFleeing(transform, threat, agent, personality);
-        if (transition == WolfStateTransition.EnterIdle)
+        AnimalStateTransition transition = AnimalPassiveStateExecutor.TickFleeing(transform, threat, agent, personality);
+        if (transition == AnimalStateTransition.EnterIdle)
         {
             ApplyBaseAgentSettings();
             EnterIdle();
@@ -289,14 +329,14 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
     private void EnterChasing()
     {
         currentState = PredatorState.Chasing;
-        agent.speed = personality.reactionSpeed;
+        baseSpeed =personality.reactionSpeed;
         agent.acceleration = personality.acceleration;
         nextAttackTime = Time.time;
     }
 
     private void TickChasing()
     {
-        WolfChaseStepResult result = WolfChaseCombatExecutor.Execute(
+        AnimalChaseStepResult result = AnimalChaseCombatExecutor.Execute(
             this,
             gameObject,
             agent,
@@ -307,11 +347,62 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
             threatCharacter,
             ref nextAttackTime);
 
-        if (result == WolfChaseStepResult.ReturnToIdle)
+        if (result == AnimalChaseStepResult.ReturnToIdle)
         {
             ApplyBaseAgentSettings();
             EnterIdle();
         }
+    }
+
+    // ------------------------------------------------------------------ //
+    //  Group
+    // ------------------------------------------------------------------ //
+
+    /// <summary>Call right after spawning, before Start runs.</summary>
+    public void JoinGroup(AnimalGroup newGroup)
+    {
+        group = newGroup;
+        group.Add(this);
+
+        if (group.Personality != null)
+            personality = group.Personality;
+    }
+
+    /// <summary>A group mate spotted this character, so react as if it had been seen.</summary>
+    public void ReceiveGroupAlert(SelectableCharacter character)
+    {
+        if (character == null || character.Stats == null || !character.Stats.IsAlive)
+            return;
+
+        if (personality == null || (stats != null && !stats.IsAlive))
+            return;
+
+        // An animal already dealing with a threat keeps it.
+        if (currentState != PredatorState.Idle && currentState != PredatorState.Roaming)
+            return;
+
+        // Past this distance the animal would drop the reaction right away.
+        float reactionRange = ShouldChaseOnThreat ? personality.chaseGiveUpDistance : personality.fleeSafeDistance;
+        if (Vector3.Distance(transform.position, character.transform.position) >= reactionRange)
+            return;
+
+        // DetectPlayer picks this up next frame and moves the animal to Alert.
+        aggroMemory.Set(character, Time.time, retaliationMemorySeconds);
+    }
+
+    private void LeaveGroup()
+    {
+        group?.Remove(this);
+        group = null;
+    }
+
+    private bool TryGetRoamPoint(out Vector3 roamPoint)
+    {
+        // With no group mates left there is nobody to stay close to.
+        if (group != null && group.MemberCount > 1)
+            return group.TryGetRoamPoint(personality.roamRadius, out roamPoint);
+
+        return AnimalNavigationUtility.TryGetRoamPoint(spawnOrigin, personality.roamRadius, out roamPoint);
     }
 
     // ------------------------------------------------------------------ //
@@ -320,7 +411,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
 
     private void ApplyBaseAgentSettings()
     {
-        agent.speed = personality.roamSpeed;
+        baseSpeed =personality.roamSpeed;
         agent.acceleration = personality.acceleration;
     }
 
@@ -333,12 +424,14 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
         }
 
         ReleaseCombatSlot();
+        LeaveGroup();
     }
 
     private void HandleDied(GameObject killer)
     {
         // Update() stops ticking once dead, so free the target's attack slot and stop moving here.
         ReleaseCombatSlot();
+        LeaveGroup();
         aggroMemory.Clear();
         if (agent.isOnNavMesh)
         {
@@ -365,6 +458,7 @@ public class AnimalPredatorAI : MonoBehaviour, ICombatActor, INaturalAttacker
         detectedTarget = attacker.transform;
         SetThreat(attacker.transform, attacker);
         aggroMemory.Set(attacker, Time.time, retaliationMemorySeconds);
+        group?.Alert(this, attacker);
 
         // Getting hit should interrupt non-combat states and enforce short retaliatory aggro.
         if (behaviorProfile == null || behaviorProfile.interruptToChaseOnRetaliation)

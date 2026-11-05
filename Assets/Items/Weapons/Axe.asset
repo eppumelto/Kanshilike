@@ -20,7 +20,7 @@ MonoBehaviour:
   weight: 2.5
   equipSlot: 0
   equippedPrefab: {fileID: 0}
-  weaponPrefab: {fileID: 8800066851433734843, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
+  weaponPrefab: {fileID: 6120394857102938471, guid: 31a7c86d6a1b48539fdfbfa192ef93f4, type: 3}
   weaponSkill: 1
   damage: 10
   attackRange: 1.5

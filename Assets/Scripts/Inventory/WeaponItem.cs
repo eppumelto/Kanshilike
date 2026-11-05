@@ -12,7 +12,7 @@ public class WeaponItem : EquippableItem
 	[Tooltip("Base damage dealt per attack.")]
 	public float damage = 10f;
 
-	[Tooltip("Max melee reach in world units. Spears should typically be higher than axes.")]
+	[Tooltip("Max reach in world units. Spears should typically be higher than axes. For bows, the shooting range.")]
 	[Min(0.2f)] public float attackRange = 1.5f;
 
 	[Tooltip("Attack speed multiplier. >1 is faster, <1 is slower.")]

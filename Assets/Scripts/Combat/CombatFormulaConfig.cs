@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Tuning for melee combat.
+/// Tuning for combat.
 ///
 /// Skills: a skill's SkillDefinition.bonusCurve gives 1.0 at level 0 and (by default) 2.0 at
 /// level 100. The formulas use (bonus - 1) as "skill progress" (0 → 1), multiplied by the
@@ -47,6 +47,16 @@ public class CombatFormulaConfig : ScriptableObject
     [Min(0f)] public float counterSkillScale = 1f;
     [Tooltip("A successful counter deals this fraction of the defender's own damage to the attacker.")]
     [Min(0f)] public float counterDamageFraction = 0.5f;
+
+    [Header("Bows")]
+    [Tooltip("The skill that steadies an archer's aim, alongside the bow's own skill.")]
+    public SkillType aimSkill = SkillType.Dexterity;
+    [Tooltip("How much of an archer's accuracy comes from the aim skill rather than the bow skill.")]
+    [Range(0f, 1f)] public float aimSkillShare = 0.25f;
+    [Tooltip("An animal hit by an arrow moves at this fraction of its current speed.")]
+    [Range(0f, 1f)] public float arrowWoundSpeedMultiplier = 0.4f;
+    [Tooltip("However many arrows it takes, an animal never slows below this fraction of its full speed.")]
+    [Range(0f, 1f)] public float minWoundSpeedMultiplier = 0.2f;
 
     [Header("Skill Mapping")]
     public SkillType strengthSkill = SkillType.Strength;

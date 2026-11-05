@@ -38,7 +38,8 @@ public static class CombatFormulaResolver
             ratingMultiplier = bite.attackRatingMultiplier;
         }
 
-        float strength = GetSkillProgress(actor, config.strengthSkill);
+        // A bow's draw weight sets its power, so an archer's Strength adds nothing to a shot.
+        float strength = weapon is BowItem ? 0f : GetSkillProgress(actor, config.strengthSkill);
         float weaponProgress = GetSkillProgress(actor, weaponSkill);
 
         float attackRating = config.baseAttackRating * ratingMultiplier
@@ -82,11 +83,20 @@ public static class CombatFormulaResolver
     /// <summary>The defender's shield if an attack from the attacker's position falls inside its arc, otherwise null.</summary>
     public static ShieldItem GetCoveringShield(ICombatActor defender, ICombatActor attacker)
     {
+        if (attacker == null || attacker.ActorTransform == null)
+            return GetShield(defender);
+
+        return GetCoveringShield(defender, attacker.ActorTransform.position);
+    }
+
+    /// <summary>The defender's shield if an attack coming from the given point falls inside its arc, otherwise null.</summary>
+    public static ShieldItem GetCoveringShield(ICombatActor defender, Vector3 attackOrigin)
+    {
         ShieldItem shield = GetShield(defender);
-        if (shield == null || defender.ActorTransform == null || attacker == null || attacker.ActorTransform == null)
+        if (shield == null || defender.ActorTransform == null)
             return shield;
 
-        Vector3 toAttacker = attacker.ActorTransform.position - defender.ActorTransform.position;
+        Vector3 toAttacker = attackOrigin - defender.ActorTransform.position;
         toAttacker.y = 0f;
         Vector3 facing = defender.ActorTransform.forward;
         facing.y = 0f;
@@ -108,6 +118,9 @@ public static class CombatFormulaResolver
 
     public static float GetDodgeRating(ICombatActor actor, CombatFormulaConfig config)
     {
+        if (!actor.CanDodge)
+            return 0f;
+
         return config.dodgeBaseRating * (1f + GetSkillProgress(actor, config.dodgeSkill) * config.dodgeSkillScale);
     }
 
@@ -159,7 +172,7 @@ public static class CombatFormulaResolver
         float blockWeight = defender.CanBlock ? config.blockWeight * (1f + GetSkillProgress(defender, config.blockSkill)) : 0f;
         if (coveringShield != null)
             blockWeight *= coveringShield.blockWeightMultiplier;
-        float dodgeWeight = config.dodgeWeight * (1f + GetSkillProgress(defender, config.dodgeSkill));
+        float dodgeWeight = defender.CanDodge ? config.dodgeWeight * (1f + GetSkillProgress(defender, config.dodgeSkill)) : 0f;
         float counterWeight = defender.CanCounter ? config.counterWeight * (1f + GetSkillProgress(defender, config.counterSkill)) : 0f;
 
         float total = blockWeight + dodgeWeight + counterWeight;
@@ -175,6 +188,32 @@ public static class CombatFormulaResolver
             return CombatReactionType.Dodge;
 
         return CombatReactionType.Counter;
+    }
+
+    /// <summary>The bow the actor is holding, or null.</summary>
+    public static BowItem GetBow(ICombatActor actor)
+    {
+        return GetWeapon(actor) as BowItem;
+    }
+
+    /// <summary>Widest a shot can stray from the aim point, in degrees. Bow skill and the aim skill narrow it, a moving target widens it.</summary>
+    public static float GetBowSpread(ICombatActor actor, BowItem bow, CombatFormulaConfig config, float targetSpeed)
+    {
+        float skill = Mathf.Lerp(GetSkillProgress(actor, bow.weaponSkill), GetSkillProgress(actor, config.aimSkill), config.aimSkillShare);
+        float spread = Mathf.Lerp(bow.untrainedSpread, bow.masterSpread, skill);
+        return spread + bow.movingTargetSpread * Mathf.Clamp01(targetSpeed / bow.movingTargetSpeed);
+    }
+
+    /// <summary>Rough chance (0–1) that a shot lands on a target of the given radius: how much of the spread the target fills.</summary>
+    public static float GetBowHitChance(ICombatActor actor, BowItem bow, CombatFormulaConfig config, float distance, float targetSpeed, float targetRadius)
+    {
+        float spread = GetBowSpread(actor, bow, config, targetSpeed);
+        if (spread <= 0f)
+            return 1f;
+
+        float targetAngle = Mathf.Atan2(targetRadius, Mathf.Max(0.01f, distance)) * Mathf.Rad2Deg;
+        float fill = targetAngle / spread;
+        return Mathf.Clamp01(fill * fill);
     }
 
     private static WeaponItem GetWeapon(ICombatActor actor)

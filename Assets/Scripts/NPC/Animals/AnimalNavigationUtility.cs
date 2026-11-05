@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public static class WolfNavigationUtility
+public static class AnimalNavigationUtility
 {
     public static bool TryGetRoamPoint(Vector3 spawnOrigin, float roamRadius, out Vector3 destination)
     {

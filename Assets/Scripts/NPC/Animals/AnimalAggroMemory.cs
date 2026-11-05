@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class WolfAggroMemory
+public sealed class AnimalAggroMemory
 {
     public Transform Target { get; private set; }
     public SelectableCharacter Character { get; private set; }
