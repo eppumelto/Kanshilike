@@ -122,6 +122,7 @@ Agent rules: Deleting (DeleteAsset, Destroy, script-delete, or AssetDatabase / F
 
 | Source | What |
 |---|---|
+| `assetStore` | Asset Store packages you own (My Assets, signed in) or downloaded: assetStore \| get packages \| where name contains "tree" \| select productId name downloaded sizeMB, then call Import() (returns its prefabs / materials) or OpenInPackageManager() to download; signedIn false: call SignIn() (opens Unity's sign-in for the user); calls Refresh, OpenStoreSearch(text), ImportFile(path) (rql-schema "assetStore") |
 | `componentTypes` | component types that can be added (name fullName namespace) |
 | `console` | captured Editor log entries, oldest first (last 1000): logType message timestamp stackTrace sequence |
 | `editor` | Editor state (isPlaying, isPaused, selection …) and operations: CreateGameObject, OpenScene, NewScene, SaveScenes, InstantiatePrefab, OpenPrefab / SavePrefab / ClosePrefab, CopyAsset / MoveAsset / DeleteAsset / CreateFolder, CreateMaterial, SaveAssets, RefreshAssets, AddTag / AddLayer, ClearConsole, ExecuteMenuItem (rql-schema "editor" for signatures) |
@@ -199,6 +200,7 @@ reconnects terrains with `allowAutoConnect` and the same `groupingID`).
 
 - `com.IvanMurzak.Unity.MCP.Editor.Rql.Modules.UnityCoreModule`
 - `com.IvanMurzak.Unity.MCP.Editor.Rql.ToolTypesModule`
+- `com.IvanMurzak.Unity.MCP.Editor.Rql.AssetStore.AssetStoreModule`
 - `com.IvanMurzak.Unity.MCP.Editor.Rql.Lighting.LightingModule`
 - `com.IvanMurzak.Unity.MCP.Editor.Rql.Physics3D.PhysicsModule`
 - `com.IvanMurzak.Unity.MCP.Editor.Rql.Terrains.TerrainModule`
