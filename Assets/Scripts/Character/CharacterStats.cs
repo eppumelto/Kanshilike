@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CharacterStats : MonoBehaviour
@@ -17,6 +17,12 @@ public class CharacterStats : MonoBehaviour
 	public float thirstLossRate = 3f;
 	public float tirednessGainRate = 1f;
 
+	[Header("Sleep (per hour asleep)")]
+	[Tooltip("Tiredness removed per in-game hour of sleep.")]
+	[Min(0f)] public float restPerHour = 15f;
+	[Tooltip("Hunger and thirst fall at this fraction of their normal rate while asleep.")]
+	[Range(0f, 1f)] public float sleepNeedsMultiplier = 0.5f;
+
 	[Header("Starvation (HP lost per in-game hour while the bar is empty)")]
 	[Min(0f)] public float starvationDamagePerHour = 3f;
 	[Min(0f)] public float dehydrationDamagePerHour = 5f;
@@ -27,14 +33,15 @@ public class CharacterStats : MonoBehaviour
 	public HealingConfig HealingConfig => healingConfig;
 
 	/// <summary>True from the start of a sleep until it ends, is interrupted, or the character dies.</summary>
-	public bool IsSleeping { get; private set; }
+	public bool IsSleeping => clock.IsSleeping;
 
 	// TODO: Replace with a real skill-based calculation once the skill system is implemented.
 	// Higher values = faster harvesting. E.g. a Foraging skill of 50 could give 1.5x speed.
 	public float HarvestSpeedMultiplier => 1.0f;
 
 	private TimeManager timeManager;
-	public float lastHour;
+	private readonly HourClock clock = new HourClock();
+	private readonly List<HourTick> ticks = new List<HourTick>();
 
 	public bool IsAlive => currentHealth > 0f;
 	public bool IsStarving => hasNeeds && hunger <= 0f;
@@ -74,46 +81,60 @@ public class CharacterStats : MonoBehaviour
 			timeManager.OnTimeChanged -= HandleTimeChanged;
 	}
 
+	// The first call only sets the starting hour. After that, every whole hour passed runs one
+	// update, even when several pass in a single frame.
 	void HandleTimeChanged(float currentTime)
 	{
-		int hour = Mathf.FloorToInt(currentTime);
-		if (hour != Mathf.FloorToInt(lastHour))
-		{
-			UpdateStats(hour);
-			lastHour = currentTime;
-		}
+		ticks.Clear();
+		bool sleepEnded = clock.Advance(currentTime, ticks);
+
+		foreach (HourTick tick in ticks)
+			UpdateStats(tick);
+
+		if (sleepEnded)
+			Debug.Log($"{name} woke up - tiredness {tiredness:F0}");
 	}
 
-	void UpdateStats(float currentHour)
+	void UpdateStats(HourTick tick)
 	{
-		if (!IsAlive || !hasNeeds)
+		if (!IsAlive)
 			return;
 
-		float hungerRate = hungerLossRate;
-		float thirstRate = thirstLossRate;
+		if (hasNeeds)
+		{
+			UpdateNeeds(tick);
+			ApplyStarvation();
+		}
+
+		ApplyRegeneration(tick.AsleepFraction);
+	}
+
+	// Hunger, thirst and tiredness for one hour. The part of the hour spent asleep drains needs
+	// more slowly and rests instead of tiring.
+	void UpdateNeeds(HourTick tick)
+	{
+		float asleep = tick.AsleepFraction;
+		float awake = 1f - asleep;
+		float needsScale = awake + asleep * sleepNeedsMultiplier;
+
 		float tiredRate = tirednessGainRate;
+		if (tick.Hour >= 22 || tick.Hour < 6)
+			tiredRate *= 2f; // tire faster at night
 
-		// Increase tiredness faster at night
-		if (currentHour >= 22 || currentHour < 6)
-			tiredRate *= 2f;
-
-		hunger = Mathf.Max(0f, hunger - hungerRate);
-		thirst = Mathf.Max(0f, thirst - thirstRate);
-		tiredness = Mathf.Min(100f, tiredness + tiredRate);
+		hunger = Mathf.Max(0f, hunger - hungerLossRate * needsScale);
+		thirst = Mathf.Max(0f, thirst - thirstLossRate * needsScale);
+		tiredness = Mathf.Clamp(tiredness + tiredRate * awake - restPerHour * asleep, 0f, 100f);
 
 		Debug.Log($"{name} -> H:{hunger} T:{thirst} Td:{tiredness}");
-
-		ApplyStarvation();
-		ApplyRegeneration();
 	}
 
 	// Natural and sleep healing, once per in-game hour. Does nothing without a HealingConfig.
-	void ApplyRegeneration()
+	void ApplyRegeneration(float asleepFraction)
 	{
 		if (healingConfig == null || !IsAlive)
 			return;
 
-		float rate = HealingRules.RegenPerHour(IsSleeping, IsStarving, IsDehydrated,
+		float rate = HealingRules.RegenPerHour(asleepFraction, IsStarving, IsDehydrated,
 			healingConfig.naturalRegenPerHour, healingConfig.sleepRegenPerHour);
 		float gained = Heal(rate);
 		if (gained > 0f)
@@ -145,12 +166,21 @@ public class CharacterStats : MonoBehaviour
 	public void Drink(float amount)
 	{
 		thirst = Mathf.Min(100f, thirst + amount);
-	}    
+	}
+
+	/// <summary>Sleeps for this many in-game hours. Needs a TimeManager to wake up again.</summary>
 	public void Sleep(float sleepHours)
 	{
-		StopAllCoroutines();
-		StartCoroutine(SleepRoutine(sleepHours));
-		IsSleeping = true;
+		if (!IsAlive)
+			return;
+		if (timeManager == null)
+		{
+			Debug.LogWarning($"{name} can't sleep: no TimeManager in the scene.");
+			return;
+		}
+
+		clock.StartSleep(sleepHours);
+		Debug.Log($"{name} started sleeping for {sleepHours} hours");
 	}
 
 	public void ReceiveDamage(float amount, GameObject source = null)
@@ -166,8 +196,7 @@ public class CharacterStats : MonoBehaviour
 		if (!IsAlive)
 		{
 			Debug.Log($"{name} died.");
-			StopAllCoroutines(); // e.g. sleeping
-			IsSleeping = false;
+			clock.StopSleep();
 			OnDied?.Invoke(source);
 		}
 	}
@@ -183,45 +212,9 @@ public class CharacterStats : MonoBehaviour
 		return gained;
 	}
 
-	/// <summary>Ends a sleep early (or at its end). The hours already slept are kept.</summary>
+	/// <summary>Ends a sleep early. The time already slept still counts at the next hour.</summary>
 	public void WakeUp()
 	{
-		if (!IsSleeping)
-			return;
-
-		StopAllCoroutines();
-		IsSleeping = false;
-	}
-
-	private IEnumerator SleepRoutine(float sleepHours)
-	{
-		float inGameHoursSlept = 0f;
-		float restPerHour = 15f;
-
-		float startTiredness = tiredness;
-		float targetTiredness = Mathf.Max(0f, tiredness - sleepHours * restPerHour);
-
-		Debug.Log($"{name} started sleeping for {sleepHours} hours");
-
-		while (inGameHoursSlept < sleepHours)
-		{
-			// Wait until time advances one in-game hour
-			float hourStart = Mathf.Floor(timeManager.currentTime);
-			yield return new WaitUntil(() => Mathf.Floor(timeManager.currentTime) != hourStart);
-
-			inGameHoursSlept += 1f;
-
-			// Reduce tiredness gradually
-			tiredness = Mathf.MoveTowards(tiredness, targetTiredness, restPerHour);
-
-			// Slight hunger/thirst loss while sleeping
-			hunger = Mathf.Max(0f, hunger - hungerLossRate * 0.5f);
-			thirst = Mathf.Max(0f, thirst - thirstLossRate * 0.5f);
-
-			Debug.Log($"{name} slept {inGameHoursSlept}h so far � tiredness now {tiredness}");
-		}
-
-		Debug.Log($"{name} woke up after {sleepHours}h sleep � final tiredness {tiredness}");
-		WakeUp();
+		clock.StopSleep();
 	}
 }

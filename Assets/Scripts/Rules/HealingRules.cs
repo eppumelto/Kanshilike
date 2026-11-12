@@ -3,12 +3,16 @@ using System;
 /// <summary>Plain healing formulas with no Unity dependency, so they can be tested on their own.</summary>
 public static class HealingRules
 {
-	/// <summary>HP regained per in-game hour. Zero while starving or dehydrated; the sleep rate replaces the natural one.</summary>
-	public static float RegenPerHour(bool asleep, bool starving, bool dehydrated, float naturalPerHour, float sleepPerHour)
+	/// <summary>
+	/// HP regained for one in-game hour. Zero while starving or dehydrated. The sleep rate replaces the
+	/// natural one for the share of the hour spent asleep (<paramref name="asleepFraction"/>, 0-1).
+	/// </summary>
+	public static float RegenPerHour(float asleepFraction, bool starving, bool dehydrated, float naturalPerHour, float sleepPerHour)
 	{
 		if (starving || dehydrated)
 			return 0f;
-		return Math.Max(0f, asleep ? sleepPerHour : naturalPerHour);
+		float asleep = Math.Max(0f, Math.Min(1f, asleepFraction));
+		return Math.Max(0f, naturalPerHour) * (1f - asleep) + Math.Max(0f, sleepPerHour) * asleep;
 	}
 
 	/// <summary>How much health a heal of <paramref name="amount"/> really restores. Never negative, and zero for the dead.</summary>

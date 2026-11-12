@@ -10,22 +10,36 @@ namespace Kanshilike.Tests.EditMode
 		[Test]
 		public void RegenPerHour_Awake_ReturnsNaturalRate()
 		{
-			Assert.AreEqual(3f, HealingRules.RegenPerHour(false, false, false, 3f, 8f), Eps);
+			Assert.AreEqual(3f, HealingRules.RegenPerHour(0f, false, false, 3f, 8f), Eps);
 		}
 
 		[Test]
 		public void RegenPerHour_Asleep_ReturnsSleepRateNotSum()
 		{
-			Assert.AreEqual(8f, HealingRules.RegenPerHour(true, false, false, 3f, 8f), Eps);
+			Assert.AreEqual(8f, HealingRules.RegenPerHour(1f, false, false, 3f, 8f), Eps);
 		}
 
-		[TestCase(true, true, false)]
-		[TestCase(true, false, true)]
-		[TestCase(true, true, true)]
-		[TestCase(false, true, false)]
-		[TestCase(false, false, true)]
-		[TestCase(false, true, true)]
-		public void RegenPerHour_StarvingOrDehydrated_ReturnsZero(bool asleep, bool starving, bool dehydrated)
+		[Test]
+		public void RegenPerHour_PartlyAsleep_BlendsByShareOfHour()
+		{
+			Assert.AreEqual(5.5f, HealingRules.RegenPerHour(0.5f, false, false, 3f, 8f), Eps);
+			Assert.AreEqual(3.5f, HealingRules.RegenPerHour(0.1f, false, false, 3f, 8f), Eps);
+		}
+
+		[TestCase(-1f, 3f)]
+		[TestCase(2f, 8f)]
+		public void RegenPerHour_FractionOutOfRange_Clamps(float fraction, float expected)
+		{
+			Assert.AreEqual(expected, HealingRules.RegenPerHour(fraction, false, false, 3f, 8f), Eps);
+		}
+
+		[TestCase(1f, true, false)]
+		[TestCase(1f, false, true)]
+		[TestCase(1f, true, true)]
+		[TestCase(0f, true, false)]
+		[TestCase(0f, false, true)]
+		[TestCase(0f, true, true)]
+		public void RegenPerHour_StarvingOrDehydrated_ReturnsZero(float asleep, bool starving, bool dehydrated)
 		{
 			Assert.AreEqual(0f, HealingRules.RegenPerHour(asleep, starving, dehydrated, 3f, 8f), Eps);
 		}
@@ -33,8 +47,8 @@ namespace Kanshilike.Tests.EditMode
 		[Test]
 		public void RegenPerHour_NegativeRates_ClampToZero()
 		{
-			Assert.AreEqual(0f, HealingRules.RegenPerHour(false, false, false, -2f, 8f), Eps);
-			Assert.AreEqual(0f, HealingRules.RegenPerHour(true, false, false, 3f, -2f), Eps);
+			Assert.AreEqual(0f, HealingRules.RegenPerHour(0f, false, false, -2f, 8f), Eps);
+			Assert.AreEqual(0f, HealingRules.RegenPerHour(1f, false, false, 3f, -2f), Eps);
 		}
 
 		// HealthGained
