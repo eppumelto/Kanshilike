@@ -29,6 +29,10 @@ Compile errors point at your own lines (`snippet.cs(2,5)`).
 
 Deleting (DeleteAsset, Destroy, script-delete, or AssetDatabase / File deletes in script-execute) takes two turns unless the user named the exact items or you created them yourself in this task: first list the exact candidates (rql-query, a dry_run=true mutation or a read-only snippet), show them and end your turn; delete only that list, in a separate call, after the user confirms. Otherwise never find and delete candidates in the same turn.
 
+## Packages
+
+Install Unity packages with package-search / package-add and Asset Store packages with assetstore-library / assetstore-add, not with code here: never call Client.Add, AssetDatabase.ImportPackage or unpack a .unitypackage yourself. Unity's 'Missing signature' window is the user's to answer; if they cancel, stop.
+
 ## usings / include
 
 - `usings`: extra namespaces, e.g. `["MyGame.Gameplay"]`.
