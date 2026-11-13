@@ -50,6 +50,8 @@ public class PlayerControllable : MonoBehaviour
 			stats.OnDied += HandleDied;
 
 		all.Add(this);
+		if (Character != null)
+			Character.InvalidateFaction(); // squad members count as the player's faction
 		Joined?.Invoke(this);
 	}
 
@@ -59,6 +61,8 @@ public class PlayerControllable : MonoBehaviour
 			stats.OnDied -= HandleDied;
 
 		all.Remove(this);
+		if (Character != null)
+			Character.InvalidateFaction();
 	}
 
 	public void SetSelected(bool selected)

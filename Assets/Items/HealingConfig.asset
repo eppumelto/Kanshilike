@@ -12,8 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e64b598fc1030774391be7b01ad49143, type: 3}
   m_Name: HealingConfig
   m_EditorClassIdentifier: Assembly-CSharp::HealingConfig
-  naturalRegenPerHour: 3
-  sleepRegenPerHour: 8
   firstAidHealScale: 1
   firstAidSpeedScale: 1
   minTreatmentSeconds: 1.5

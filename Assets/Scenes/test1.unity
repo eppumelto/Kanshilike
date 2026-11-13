@@ -1630,11 +1630,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalScale.x
-      value: 15
+      value: 10.101
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalScale.y
-      value: 15
+      value: 8.831319
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalScale.z
@@ -1642,7 +1642,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.889
+      value: 0.60961
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1650,7 +1650,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.97
+      value: -0.96509
       objectReference: {fileID: 0}
     - target: {fileID: 8172853005156464641, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
       propertyPath: m_LocalRotation.w
@@ -4584,14 +4584,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Jonttuli
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
-  faction: 0
+  ownFaction: {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
+  legacyFaction: 0
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
   canUseEquipment: 1
   canBlock: 1
   canCounter: 1
+  selfDefenseChaseDistance: 15
   autoEatBelow: 40
   autoDrinkBelow: 40
   baseCarryCapacity: 30
+  athleticsXPPerMeter: 0.05
+  strengthXPPerLoadedMeter: 0.1
+  harvestXP: 15
 --- !u!114 &1440672250
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4613,10 +4618,11 @@ MonoBehaviour:
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  restPerHour: 15
+  sleepNeedsMultiplier: 0.5
   starvationDamagePerHour: 3
   dehydrationDamagePerHour: 5
   healingConfig: {fileID: 11400000, guid: f26f29bb759876c4f9b28716098491eb, type: 2}
-  lastHour: 0
 --- !u!114 &1440672251
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4975,7 +4981,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d64c21433fc681640a825d98317d0a0f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimalAI
-  faction: 1
+  factionDefinition: {fileID: 11400000, guid: 4f0949f563dae3343a32d614a8babcc8, type: 2}
+  legacyFaction: 1
   personality: {fileID: 11400000, guid: f7882aa88ce26614a8ee308673fe44b6, type: 2}
   behaviorProfile: {fileID: 0}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
@@ -5058,10 +5065,11 @@ MonoBehaviour:
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  restPerHour: 15
+  sleepNeedsMultiplier: 0.5
   starvationDamagePerHour: 3
   dehydrationDamagePerHour: 5
   healingConfig: {fileID: 0}
-  lastHour: 0
 --- !u!114 &1633399496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5277,10 +5285,11 @@ MonoBehaviour:
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  restPerHour: 15
+  sleepNeedsMultiplier: 0.5
   starvationDamagePerHour: 3
   dehydrationDamagePerHour: 5
   healingConfig: {fileID: 11400000, guid: f26f29bb759876c4f9b28716098491eb, type: 2}
-  lastHour: 0
 --- !u!114 &1706174145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5295,14 +5304,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Keppana
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
-  faction: 0
+  ownFaction: {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
+  legacyFaction: 0
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
   canUseEquipment: 1
   canBlock: 1
   canCounter: 1
+  selfDefenseChaseDistance: 15
   autoEatBelow: 40
   autoDrinkBelow: 40
   baseCarryCapacity: 30
+  athleticsXPPerMeter: 0.05
+  strengthXPPerLoadedMeter: 0.1
+  harvestXP: 15
 --- !u!195 &1706174146
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -6288,6 +6302,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 561251382823878090, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 25.016499
+      objectReference: {fileID: 0}
+    - target: {fileID: 561251382823878090, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2.42
       objectReference: {fileID: 0}
@@ -6297,7 +6315,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 561251382823878090, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.3
+      value: -2.3044
       objectReference: {fileID: 0}
     - target: {fileID: 561251382823878090, guid: 2108e4eb1f7c82c42971973eb796704f, type: 3}
       propertyPath: m_LocalRotation.w

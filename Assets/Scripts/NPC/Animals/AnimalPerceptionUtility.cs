@@ -16,7 +16,7 @@ public static class AnimalPerceptionUtility
 {
     public static AnimalDetectionResult DetectNearestTarget(
         Transform self,
-        Faction selfFaction,
+        FactionId selfFaction,
         AnimalPersonality personality,
         Transform forcedAggroTarget,
         CombatActor forcedAggroCharacter,

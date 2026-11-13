@@ -14,7 +14,7 @@ public class TimeManager : MonoBehaviour
 	public Gradient ambientColor;
 	public AnimationCurve sunIntensity;
 
-	public event Action<float> OnTimeChanged; // broadcasts current time (0–24)
+	public event Action<float> OnTimeChanged; // broadcasts current time (0â€“24)
 
 	private void Start()
 	{

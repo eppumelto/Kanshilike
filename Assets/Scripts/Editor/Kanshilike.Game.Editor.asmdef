@@ -1,0 +1,19 @@
+{
+    "name": "Kanshilike.Game.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Kanshilike.Game",
+        "Kanshilike.Rules"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

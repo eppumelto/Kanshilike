@@ -25,4 +25,4 @@ MonoBehaviour:
   damage: 10
   attackRange: 1.5
   attackSpeedMultiplier: 1
-  twoHanded: 1
+  twoHanded: 0

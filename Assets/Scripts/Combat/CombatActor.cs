@@ -17,7 +17,7 @@ public abstract class CombatActor : MonoBehaviour, ICombatActor
 	public SkillSet Skills => skills;
 	public EquipmentManager Equipment => equipment;
 
-	public abstract Faction Faction { get; }
+	public abstract FactionId Faction { get; }
 	public abstract bool CanUseEquipment { get; }
 	public abstract bool CanBlock { get; }
 	public abstract bool CanDodge { get; }

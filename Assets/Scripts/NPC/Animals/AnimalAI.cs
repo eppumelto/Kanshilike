@@ -20,7 +20,13 @@ public class AnimalAI : CombatActor, INaturalAttacker
     //  Inspector
     // ------------------------------------------------------------------ //
 
-    [SerializeField] private Faction faction = Faction.Wildlife;
+    [Tooltip("This animal's faction. Wildlife is hostile to every other faction.")]
+    [SerializeField] private FactionDefinition factionDefinition;
+    // The old Faction enum value (1 = Wildlife), read from data saved before factions were assets.
+    // Used only while factionDefinition is unset.
+    [SerializeField, HideInInspector, UnityEngine.Serialization.FormerlySerializedAs("faction")] private int legacyFaction = 1;
+    private FactionDefinition resolvedFaction;
+    private bool factionResolved;
     [SerializeField] private AnimalPersonality personality;
     [SerializeField] private AnimalPredatorBehaviorProfile behaviorProfile;
     [SerializeField] private CombatFormulaConfig combatFormulaConfig;
@@ -61,7 +67,22 @@ public class AnimalAI : CombatActor, INaturalAttacker
 
     private float nextAttackTime;
 
-    public override Faction Faction => faction;
+    public override FactionId Faction
+    {
+        get
+        {
+            if (!factionResolved)
+            {
+                resolvedFaction = factionDefinition != null ? factionDefinition : FactionRelations.FromLegacy(legacyFaction);
+                FactionRelations.Register(resolvedFaction);
+                factionResolved = true;
+            }
+            return resolvedFaction != null ? resolvedFaction.FactionId : FactionId.None;
+        }
+    }
+
+    /// <summary>True while the faction still comes from the pre-asset enum field.</summary>
+    public bool UsesLegacyFaction => factionDefinition == null;
     public override bool CanUseEquipment => false;
     public override bool CanBlock => personality != null && personality.canBlock;
     public override bool CanDodge => personality != null && personality.canDodge;

@@ -67,13 +67,11 @@ namespace Kanshilike.Tests.EditMode
 		}
 
 		[Test]
-		public void HealingConfig_Asset_SleepRateAboveNaturalAndBothPositive()
+		public void HealingConfig_Asset_HasNoRegeneration()
 		{
 			var so = Load(ConfigPath);
-			float natural = Prop(so, "naturalRegenPerHour").floatValue;
-			float sleep = Prop(so, "sleepRegenPerHour").floatValue;
-			Assert.Greater(natural, 0f);
-			Assert.Greater(sleep, natural);
+			Assert.IsNull(so.FindProperty("naturalRegenPerHour"), "regeneration was removed: health only comes back through First Aid");
+			Assert.IsNull(so.FindProperty("sleepRegenPerHour"));
 		}
 
 		[Test]

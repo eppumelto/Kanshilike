@@ -19,10 +19,13 @@ namespace Kanshilike.Tests.PlayMode
 
 		readonly List<Object> made = new List<Object>();
 		CombatFormulaConfig config;
+		TestFactions factions;
 
 		[SetUp]
 		public void SetUp()
 		{
+			factions = new TestFactions();
+			factions.Install();
 			config = Track(ScriptableObject.CreateInstance<CombatFormulaConfig>());
 		}
 
@@ -33,6 +36,7 @@ namespace Kanshilike.Tests.PlayMode
 				if (obj != null)
 					Object.Destroy(obj);
 			made.Clear();
+			factions.Uninstall();
 		}
 
 		// ── Orders ──────────────────────────────────────────
@@ -44,13 +48,13 @@ namespace Kanshilike.Tests.PlayMode
 			Assert.IsFalse(new AttackOrder(null).YieldsToSelfDefence, "already fighting");
 			Assert.IsTrue(new InteractOrder(null, "x").YieldsToSelfDefence, "busy with a task");
 			Assert.IsTrue(new SleepOrder(8f).YieldsToSelfDefence, "asleep");
-			Assert.IsTrue(new TreatWoundsOrder(null, null).StopsWhenAttacked, "binding wounds");
+			Assert.IsTrue(new TreatWoundsOrder(null, null, null).StopsWhenAttacked, "binding wounds");
 		}
 
 		[UnityTest]
 		public IEnumerator GiveOrder_EndsThePreviousOrderOnce()
 		{
-			Character c = MakeCharacter("A", Vector3.zero, Faction.Player);
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player);
 			yield return null;
 
 			var first = new RecordingOrder();
@@ -70,7 +74,7 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator FinishedOrder_EndsAndLeavesTheCharacterIdle()
 		{
-			Character c = MakeCharacter("A", Vector3.zero, Faction.Player);
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player);
 			yield return null;
 
 			var order = new RecordingOrder { Frames = 2 };
@@ -86,8 +90,8 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator HostileAttack_IdleDefenderFightsBack()
 		{
-			Character defender = MakeCharacter("Defender", Vector3.zero, Faction.Player);
-			Character attacker = MakeCharacter("Attacker", Vector3.right * Reach, Faction.Wildlife);
+			Character defender = MakeCharacter("Defender", Vector3.zero, factions.Player);
+			Character attacker = MakeCharacter("Attacker", Vector3.right * Reach, factions.Wildlife);
 			yield return null;
 
 			attacker.AttackTarget(defender);
@@ -99,8 +103,8 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator FriendlyAttack_DefenderStaysIdle()
 		{
-			Character defender = MakeCharacter("Defender", Vector3.zero, Faction.Player);
-			Character attacker = MakeCharacter("Friend", Vector3.right * Reach, Faction.Player);
+			Character defender = MakeCharacter("Defender", Vector3.zero, factions.Player);
+			Character attacker = MakeCharacter("Friend", Vector3.right * Reach, factions.Player);
 			int attacks = 0;
 			defender.Stats.OnAttacked += (_, __) => attacks++;
 			yield return null;
@@ -115,8 +119,8 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator OrderThatDoesNotYield_IsKeptWhenAttacked()
 		{
-			Character defender = MakeCharacter("Defender", Vector3.zero, Faction.Player);
-			Character attacker = MakeCharacter("Attacker", Vector3.right * Reach, Faction.Wildlife);
+			Character defender = MakeCharacter("Defender", Vector3.zero, factions.Player);
+			Character attacker = MakeCharacter("Attacker", Vector3.right * Reach, factions.Wildlife);
 			int attacks = 0;
 			defender.Stats.OnAttacked += (_, __) => attacks++;
 			yield return null;
@@ -134,8 +138,8 @@ namespace Kanshilike.Tests.PlayMode
 		public IEnumerator Sleeper_WakesAndFightsBackWhenAttacked()
 		{
 			MakeTimeManager();
-			Character sleeper = MakeCharacter("Sleeper", Vector3.zero, Faction.Player);
-			Character attacker = MakeCharacter("Attacker", Vector3.right * Reach, Faction.Wildlife);
+			Character sleeper = MakeCharacter("Sleeper", Vector3.zero, factions.Player);
+			Character attacker = MakeCharacter("Attacker", Vector3.right * Reach, factions.Wildlife);
 			yield return null;
 
 			sleeper.Sleep();
@@ -152,8 +156,8 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator TargetDies_AttackOrderEnds()
 		{
-			Character attacker = MakeCharacter("Attacker", Vector3.zero, Faction.Player);
-			Character target = MakeCharacter("Target", Vector3.right * Reach, Faction.Wildlife);
+			Character attacker = MakeCharacter("Attacker", Vector3.zero, factions.Player);
+			Character target = MakeCharacter("Target", Vector3.right * Reach, factions.Wildlife);
 			yield return null;
 
 			attacker.AttackTarget(target);
@@ -170,7 +174,7 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator Death_LeavesACorpseAndEndsTheOrder()
 		{
-			Character c = MakeCharacter("A", Vector3.zero, Faction.Player);
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player);
 			yield return null;
 
 			var order = new RecordingOrder { Frames = 1000 };
@@ -187,7 +191,7 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UsingFood_EatsOneFromTheStack()
 		{
-			Character c = MakeCharacter("A", Vector3.zero, Faction.Player, withInventory: true);
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player, withInventory: true);
 			yield return null;
 
 			var food = MakeItem<FoodItem>("Berries", maxStack: 5);
@@ -203,7 +207,7 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UsingADrink_KeepsTheEmptyContainer()
 		{
-			Character c = MakeCharacter("A", Vector3.zero, Faction.Player, withInventory: true);
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player, withInventory: true);
 			yield return null;
 
 			var empty = MakeItem<MiscItem>("Empty waterskin", maxStack: 1);
@@ -222,7 +226,7 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UsingAnItemWithNoUse_FailsWithAReason()
 		{
-			Character c = MakeCharacter("A", Vector3.zero, Faction.Player, withInventory: true);
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player, withInventory: true);
 			yield return null;
 
 			var stone = MakeItem<MiscItem>("Stone", maxStack: 1);
@@ -235,8 +239,8 @@ namespace Kanshilike.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator BindingWounds_IsInterruptedByAnyAttack()
 		{
-			Character patient = MakeCharacter("Patient", Vector3.zero, Faction.Player, withInventory: true);
-			Character friend = MakeCharacter("Friend", Vector3.right * Reach, Faction.Player);
+			Character patient = MakeCharacter("Patient", Vector3.zero, factions.Player, withInventory: true);
+			Character friend = MakeCharacter("Friend", Vector3.right * Reach, factions.Player);
 			SetField(patient.Stats, "healingConfig", Track(ScriptableObject.CreateInstance<HealingConfig>()));
 			yield return null;
 
@@ -255,9 +259,65 @@ namespace Kanshilike.Tests.PlayMode
 			Assert.IsNotNull(patient.GetComponent<Inventory>().FindFirst<HealingItem>(), "an interrupted dressing is not used up");
 		}
 
+		[UnityTest]
+		public IEnumerator TreatingASquadmate_HealsThemAndUsesTheHealersDressing()
+		{
+			Character healer = MakeCharacter("Healer", Vector3.zero, factions.Player, withInventory: true);
+			Character patient = MakeCharacter("Patient", Vector3.right * Reach, factions.Player);
+			var healing = Track(ScriptableObject.CreateInstance<HealingConfig>());
+			healing.minTreatmentSeconds = 0f;
+			SetField(healer.Stats, "healingConfig", healing);
+			yield return null;
+
+			var moss = MakeItem<HealingItem>("Moss dressing", maxStack: 5);
+			moss.useSeconds = 0.1f;
+			moss.healAmount = 25f;
+			healer.GetComponent<Inventory>().Add(moss, 1);
+			patient.Stats.currentHealth = 50f;
+
+			Assert.IsTrue(healer.TryTreatWounds(patient, out string reason), reason);
+			Assert.AreSame(patient, ((TreatWoundsOrder)healer.CurrentOrder).Patient);
+			yield return WaitFor(() => healer.CurrentOrder == null, 3f);
+
+			Assert.AreEqual(75f, patient.Stats.currentHealth, 0.01f, "the patient is healed");
+			Assert.AreEqual(100f, healer.Stats.currentHealth, 0.01f);
+			Assert.IsNull(healer.GetComponent<Inventory>().FindFirst<HealingItem>(), "the healer's dressing is used up");
+		}
+
+		[UnityTest]
+		public IEnumerator Treating_BarelyWounded_IsRefusedAndKeepsTheDressing()
+		{
+			Character c = MakeCharacter("A", Vector3.zero, factions.Player, withInventory: true);
+			SetField(c.Stats, "healingConfig", Track(ScriptableObject.CreateInstance<HealingConfig>()));
+			yield return null;
+
+			var moss = MakeItem<HealingItem>("Moss dressing", maxStack: 5);
+			moss.healAmount = 25f;
+			c.GetComponent<Inventory>().Add(moss, 1);
+			c.Stats.currentHealth = 95f; // missing 5 of a 25 heal
+
+			Assert.IsFalse(c.TryUseItem(c.GetComponent<Inventory>().FindFirst<HealingItem>(), out string reason));
+			Assert.AreEqual("Not wounded enough", reason);
+			Assert.IsNotNull(c.GetComponent<Inventory>().FindFirst<HealingItem>());
+		}
+
+		[UnityTest]
+		public IEnumerator Treating_AHostile_IsRefused()
+		{
+			Character healer = MakeCharacter("Healer", Vector3.zero, factions.Player, withInventory: true);
+			Character wolf = MakeCharacter("Wolf", Vector3.right * Reach, factions.Wildlife);
+			SetField(healer.Stats, "healingConfig", Track(ScriptableObject.CreateInstance<HealingConfig>()));
+			yield return null;
+
+			healer.GetComponent<Inventory>().Add(MakeItem<HealingItem>("Moss dressing", maxStack: 5), 1);
+			wolf.Stats.currentHealth = 10f;
+
+			Assert.IsFalse(healer.TryTreatWounds(wolf, out _));
+		}
+
 		// ── Helpers ─────────────────────────────────────────
 
-		Character MakeCharacter(string name, Vector3 position, Faction faction, bool withInventory = false)
+		Character MakeCharacter(string name, Vector3 position, FactionDefinition faction, bool withInventory = false)
 		{
 			var go = Track(new GameObject(name));
 			go.SetActive(false);
@@ -268,7 +328,7 @@ namespace Kanshilike.Tests.PlayMode
 				go.AddComponent<Inventory>();
 			var character = go.AddComponent<Character>();
 			character.characterName = name;
-			SetField(character, "faction", faction);
+			SetField(character, "ownFaction", faction);
 			SetField(character, "combatFormulaConfig", config);
 			go.SetActive(true);
 			return character;
