@@ -49,6 +49,14 @@ namespace Kanshilike.Tests.PlayMode
 			Assert.IsTrue(new InteractOrder(null, "x").YieldsToSelfDefence, "busy with a task");
 			Assert.IsTrue(new SleepOrder(8f).YieldsToSelfDefence, "asleep");
 			Assert.IsTrue(new TreatWoundsOrder(null, null, null).StopsWhenAttacked, "binding wounds");
+
+			// NPC routine orders: a townsperson walking to work still defends itself; fleeing does not stop to fight.
+			Assert.IsTrue(new WanderOrder(Vector3.zero, 5f, Vector2.one).YieldsToSelfDefence, "wandering");
+			Assert.IsTrue(new PatrolOrder(new[] { Vector3.zero, Vector3.one }, 1f).YieldsToSelfDefence, "patrolling");
+			Assert.IsTrue(new IdleAtOrder(Vector3.zero).YieldsToSelfDefence, "idling");
+			Assert.IsTrue(new FollowOrder(null).YieldsToSelfDefence, "following");
+			Assert.IsTrue(new SleepOrder(8f, Vector3.zero).YieldsToSelfDefence, "going to bed");
+			Assert.IsFalse(new FleeOrder(null, 10f).YieldsToSelfDefence, "fleeing");
 		}
 
 		[UnityTest]

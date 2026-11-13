@@ -145,6 +145,122 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.15068129, y: 0.045862596, z: 0.002296075}
   m_Center: {x: -0.057029616, y: -0.00079616613, z: 5.8207647e-11}
+--- !u!1 &28973769
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 28973771}
+  - component: {fileID: 28973770}
+  m_Layer: 0
+  m_Name: Bed_Heikki
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &28973770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 28973769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c06fc0689931da4c9a412d2c9e6d80b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::NpcAnchor
+  anchorTag: {fileID: 11400000, guid: beace9c2cfc34da4c910393379503d52, type: 2}
+  radius: 1
+  waypoints: []
+--- !u!4 &28973771
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 28973769}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -6.5, y: 0.05, z: -4.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1739337080}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &37898375
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3499024356045851485, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: assignedAnchors.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3499024356045851485, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: 'assignedAnchors.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1727817022}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4942976073647386757, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: characterName
+      value: Aino
+      objectReference: {fileID: 0}
+    - target: {fileID: 8574251630414023052, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_Name
+      value: Aino
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fda8f59981759e34584855ba844ac204, type: 3}
 --- !u!1 &96343763
 GameObject:
   m_ObjectHideFlags: 0
@@ -1525,6 +1641,75 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1706174150}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &470498480
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3499024356045851485, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: assignedAnchors.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3499024356045851485, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: 'assignedAnchors.Array.data[0]'
+      value: 
+      objectReference: {fileID: 28973770}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4280141354440993774, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4942976073647386757, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: characterName
+      value: Heikki
+      objectReference: {fileID: 0}
+    - target: {fileID: 8574251630414023052, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: m_Name
+      value: Heikki
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fda8f59981759e34584855ba844ac204, type: 3}
 --- !u!1 &470578520
 GameObject:
   m_ObjectHideFlags: 0
@@ -1975,6 +2160,53 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 25724264}
   m_SourcePrefab: {fileID: 100100000, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
+--- !u!1 &592915439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 592915440}
+  - component: {fileID: 592915441}
+  m_Layer: 0
+  m_Name: Campfire
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &592915440
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 592915439}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -5, y: 0.05, z: -5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1739337080}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &592915441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 592915439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c06fc0689931da4c9a412d2c9e6d80b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::NpcAnchor
+  anchorTag: {fileID: 11400000, guid: 2a28ad0da5ac9df4f85ff5ac84455e09, type: 2}
+  radius: 3
+  waypoints: []
 --- !u!1001 &621254272
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2753,6 +2985,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 850031522}
   m_CullTransparentMesh: 1
+--- !u!1 &859916658
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 859916659}
+  - component: {fileID: 859916660}
+  m_Layer: 0
+  m_Name: Stall
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &859916659
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 859916658}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
+  m_LocalPosition: {x: 0, y: 0.05, z: 6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1739337080}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &859916660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 859916658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c06fc0689931da4c9a412d2c9e6d80b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::NpcAnchor
+  anchorTag: {fileID: 11400000, guid: b6000abc01cc2c14391e3d711e61dc58, type: 2}
+  radius: 2
+  waypoints: []
 --- !u!1 &899081922
 GameObject:
   m_ObjectHideFlags: 0
@@ -5090,6 +5369,53 @@ MonoBehaviour:
     min: 1
     max: 1
   lootGridSize: {x: 4, y: 3}
+--- !u!1 &1652318593
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1652318594}
+  - component: {fileID: 1652318595}
+  m_Layer: 0
+  m_Name: Village
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1652318594
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652318593}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -4, y: 0.05, z: 6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1739337080}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1652318595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652318593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c06fc0689931da4c9a412d2c9e6d80b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::NpcAnchor
+  anchorTag: {fileID: 11400000, guid: 9158d40e99d0e3a408b0a607925f577e, type: 2}
+  radius: 10
+  waypoints: []
 --- !u!1 &1680260830 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8800066851433734843, guid: 8c65cd1f27167964faf9d0ab6b6f39cf, type: 3}
@@ -5465,6 +5791,89 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24f3d046c46afa8bf2bb3fbab6fcab88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1727817020
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1727817021}
+  - component: {fileID: 1727817022}
+  m_Layer: 0
+  m_Name: Bed_Aino
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1727817021
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1727817020}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -9.5, y: 0.05, z: -2.9}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1739337080}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1727817022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1727817020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c06fc0689931da4c9a412d2c9e6d80b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::NpcAnchor
+  anchorTag: {fileID: 11400000, guid: beace9c2cfc34da4c910393379503d52, type: 2}
+  radius: 1
+  waypoints: []
+--- !u!1 &1739337079
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1739337080}
+  m_Layer: 0
+  m_Name: NpcAnchors
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1739337080
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1739337079}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1652318594}
+  - {fileID: 859916659}
+  - {fileID: 592915440}
+  - {fileID: 1727817021}
+  - {fileID: 28973771}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1754378268
 GameObject:
   m_ObjectHideFlags: 0
@@ -6711,3 +7120,6 @@ SceneRoots:
   - {fileID: 1167025448}
   - {fileID: 1701316276}
   - {fileID: 6310614887052063423}
+  - {fileID: 1739337080}
+  - {fileID: 37898375}
+  - {fileID: 470498480}
