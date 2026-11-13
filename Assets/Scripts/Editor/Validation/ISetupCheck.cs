@@ -31,6 +31,9 @@ public class SetupContext
 	public readonly Scene Scene;
 	private readonly Dictionary<System.Type, object> assetOverrides = new Dictionary<System.Type, object>();
 
+	/// <summary>Checks may also look at prefab assets in the project. Tests turn it off.</summary>
+	public bool CheckProjectPrefabs = true;
+
 	public SetupContext(Scene scene)
 	{
 		Scene = scene;

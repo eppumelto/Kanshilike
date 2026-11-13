@@ -30,6 +30,8 @@ public class NpcArchetype : ScriptableObject
 	[Min(1f)] public float fleeDistance = 15f;
 	[Tooltip("Placeholder, unused until bandits.")]
 	[Range(0f, 1f)] public float aggression;
+	[Tooltip("How hard this person takes the death of someone close (0-1). Scales grudge intensity.")]
+	[Range(0f, 1f)] public float vengefulness = 0.6f;
 
 	[Header("Talk")]
 	[Tooltip("Lines this NPC may say when talked to.")]

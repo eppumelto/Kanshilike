@@ -249,6 +249,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4942976073647386757, guid: fda8f59981759e34584855ba844ac204, type: 3}
+      propertyPath: personId
+      value: bee922579c7f4169bc5c71c15cc92929
+      objectReference: {fileID: 0}
+    - target: {fileID: 4942976073647386757, guid: fda8f59981759e34584855ba844ac204, type: 3}
       propertyPath: characterName
       value: Aino
       objectReference: {fileID: 0}
@@ -3429,6 +3433,10 @@ PrefabInstance:
       value: Heikki
       objectReference: {fileID: 0}
     - target: {fileID: 8571388426829092357, guid: e9a17d8944f9a0c4685714f404a81ea9, type: 3}
+      propertyPath: personId
+      value: 5c5968f2c5a54292bf5d82d215a4c6ae
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571388426829092357, guid: e9a17d8944f9a0c4685714f404a81ea9, type: 3}
       propertyPath: characterName
       value: Heikki
       objectReference: {fileID: 0}
@@ -4553,6 +4561,51 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1298676708
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1298676710}
+  - component: {fileID: 1298676709}
+  m_Layer: 0
+  m_Name: SocialWorld
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1298676709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298676708}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad85198e90f2ff04eb3f4512b4b78681, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::SocialWorld
+  config: {fileID: 11400000, guid: 7600c16b004e67c44bfc165a88b4678a, type: 2}
+--- !u!4 &1298676710
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1298676708}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1336564926
 GameObject:
   m_ObjectHideFlags: 0
@@ -4862,6 +4915,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Jonttuli
+  sex: 0
+  personId: 57e118d72abf480fabf2bc734c966373
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
   ownFaction: {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
   legacyFaction: 0
@@ -5629,6 +5684,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Keppana
+  sex: 0
+  personId: 70ea92021cea4367aaf1743c19e310de
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
   ownFaction: {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
   legacyFaction: 0
@@ -7123,3 +7180,4 @@ SceneRoots:
   - {fileID: 1739337080}
   - {fileID: 37898375}
   - {fileID: 942888181}
+  - {fileID: 1298676710}

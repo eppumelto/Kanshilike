@@ -113,6 +113,19 @@ namespace Kanshilike.Tests.PlayMode
 			return time;
 		}
 
+		/// <summary>A SocialWorld with this tuning (default when null). Registers the characters already made.</summary>
+		public SocialWorld MakeSocialWorld(SocialTuning tuning = null)
+		{
+			var config = Track(ScriptableObject.CreateInstance<SocialConfig>());
+			config.tuning = tuning ?? SocialTuning.Default;
+			var go = Track(new GameObject("SocialWorld"));
+			go.SetActive(false);
+			var social = go.AddComponent<SocialWorld>();
+			SetField(social, "config", config);
+			go.SetActive(true);
+			return social;
+		}
+
 		public T MakeItem<T>(string name, int maxStack) where T : Item
 		{
 			var item = Track(ScriptableObject.CreateInstance<T>());

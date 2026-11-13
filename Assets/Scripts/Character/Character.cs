@@ -11,6 +11,11 @@ using UnityEngine.Serialization;
 public class Character : CombatActor
 {
 	public string characterName;
+	[Tooltip("Used by kinship words (son, daughter, mother...).")]
+	[SerializeField] private Sex sex;
+	// Stable id for the social system, so a death or grudge is remembered across sessions. Scene
+	// objects get one in OnValidate; prefab assets keep theirs empty; runtime spawns get one in Awake.
+	[SerializeField, HideInInspector] private string personId;
 
 	private NavMeshAgent agent;
 	private Inventory inventory;
@@ -134,6 +139,50 @@ public class Character : CombatActor
 		CharacterFaction.RaiseOwnFactionChanged(this);
 	}
 
+	public string PersonId => personId;
+	public Sex Sex => sex;
+
+	internal void AssignNewPersonId() => personId = System.Guid.NewGuid().ToString("N");
+
+	protected override void Awake()
+	{
+		base.Awake();
+		if (string.IsNullOrEmpty(personId))
+			AssignNewPersonId();
+	}
+
+	private void OnEnable() => Social.Register(this);
+
+#if UNITY_EDITOR
+	private void OnValidate()
+	{
+		if (Application.isPlaying)
+			return;
+		bool isAsset = UnityEditor.PrefabUtility.IsPartOfPrefabAsset(this)
+			|| UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(gameObject) != null;
+		if (isAsset)
+		{
+			if (!string.IsNullOrEmpty(personId))
+			{
+				personId = "";
+				UnityEditor.EditorUtility.SetDirty(this);
+			}
+			return;
+		}
+		if (string.IsNullOrEmpty(personId) && gameObject.scene.IsValid())
+		{
+			AssignNewPersonId();
+			UnityEditor.EditorUtility.SetDirty(this);
+			// So the new id is saved with the scene instead of being made again on the next load.
+			UnityEditor.EditorApplication.delayCall += () =>
+			{
+				if (this != null && gameObject.scene.IsValid() && !Application.isPlaying)
+					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+			};
+		}
+	}
+#endif
+
 	/// <summary>What the character is doing now, or null when idle.</summary>
 	public CharacterOrder CurrentOrder => currentOrder;
 	internal NavMeshAgent Agent => agent;
@@ -158,8 +207,11 @@ public class Character : CombatActor
 		{
 			stats.OnDied += HandleDied;
 			stats.OnAttacked += HandleAttacked;
+			stats.OnDamaged += HandleDamaged;
 		}
 	}
+
+	private void HandleDamaged(float amount, GameObject source) => Social.ReportDamaged(this, source);
 
 	private void Update()
 	{
@@ -206,6 +258,8 @@ public class Character : CombatActor
 
 	private void HandleAttacked(GameObject attacker, bool blockedWithShield)
 	{
+		// First, so the opinion drop counts when deciding whether to fight back.
+		Social.ReportAttack(this, attacker);
 		lastAttacker = attacker != null ? attacker.transform : null;
 		lastAttackedTime = Time.time;
 
@@ -322,6 +376,7 @@ public class Character : CombatActor
 
 	private void HandleDied(GameObject killer)
 	{
+		Social.ReportDeath(this, killer);
 		EndCurrentOrder();
 		// Gear goes into the bag so the body can be looted.
 		InventoryActions.UnequipAllInto(equipment, inventory);
@@ -434,7 +489,9 @@ public class Character : CombatActor
 		{
 			stats.OnDied -= HandleDied;
 			stats.OnAttacked -= HandleAttacked;
+			stats.OnDamaged -= HandleDamaged;
 		}
+		Social.Unregister(this);
 	}
 
 	/// <summary>

@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34177a0469f68654db82d2e7a8fc5226, type: 3}
+  m_Name: SocialConfig
+  m_EditorClassIdentifier: Kanshilike.Game::SocialConfig
+  tuning:
+    hostileOpinion: -60
+    alliedOpinion: 60
+    attackedOpinion: -25
+    foughtTogetherOpinion: 10
+    treatedWoundsOpinion: 15
+    neighbourBondOpinion: 20
+    campBondOpinion: 40
+    kinGroupBondOpinion: 30
+    householdBondOpinion: 60
+    elderBondOpinion: 40
+    weightFamily: 0.4
+    weightLover: 0.5
+    weightFriend: 0.2
+    weightComrade: 0.1
+    weightRival: -0.3
+    weightNeighbour: 0.2
+    weightElder: 0.3
+    weightChild: 0.7
+    weightParent: 0.6
+    weightSpouse: 0.6
+    weightSibling: 0.5
+    grudgeClosenessThreshold: 0.35
+    defaultVengefulness: 0.5
+    kinGrudgeBonus: 20
+    minGrudgeIntensity: 15
+    hostileAt: 36
+    rallyAt: 48
+    huntAt: 68
+    squadScopeAt: 85
+    decayPerDay: 5
+    forgetBelow: 10
+    stackBonus: 10
+    maxGrudgesPerHolder: 3
+    maxGrudgesPerDeath: 4
+    elderDeathGrudgeCap: 20
+    maxFeudGeneration: 2
+    generationFalloff: 0.6
+    inheritAt: 60
+    inheritFactor: 0.75
+    attributionWindowHours: 0.25
+    witnessRadius: 20
+    newsDelayHours: 3
+    kinNewsDelayHours: 24
+    rallyRadius: 15
+    rallyCloseness: 0.35
+    rallyIntensityFactor: 0.5
+    calloutCooldownSeconds: 20
+    huntGiveUpHours: 6
+    huntSearchRadius: 8
+    gatherRadius: 30
+    maxHuntParty: 3
+    gatherBelowRatio: 1
+    huntMinStrengthRatio: 0.6
+    bloodPriceWorthPerIntensity: 1
+    bloodPriceMinWorth: 10
+    bloodPriceOpinionFloor: -20

@@ -147,7 +147,7 @@ Each person has four independent memberships. They are not nested: a kin group s
 - **Callers that stay on faction relations:** `AnimalPerceptionUtility` (animals have no persons), `Character.TryTreatWounds` and `SelectionManager.TryOrderTreatment`, so treating wounds keeps the simple faction rule.
 
 ### Deaths: `DamageLog` and `DeathLedger` (4a)
-- `DeathRecord { int Index; string VictimId; string KillerId (null when no person killed them); bool KillerFactionKnown; FactionId KillerFaction; bool KillerWitnessed; bool VictimWasElder; string ElderOfCommunityId; int Day; float Hour; WorldPoint Position; int FeudGeneration; int GrudgesCreated }`. `WorldPoint` is a plain `{ float X, Y, Z }` struct in Rules, because Rules cannot use `Vector3`.
+- `DeathRecord { int Index; string VictimId; string KillerId (null when no person killed them); bool KillerFactionKnown; FactionId KillerFaction; bool KillerWitnessed; bool VictimWasElder; string ElderOfCommunityId; int Day; float Hour; WorldPoint Position; int FeudGeneration; int GrudgesCreated; List<InheritedGrudge> InheritableGrudges }`. `InheritedGrudge { string TargetId; string VictimId; int DeathIndex; float Intensity; int Generation }` is the snapshot children take over (see Grudges). `WorldPoint` is a plain `{ float X, Y, Z }` struct in Rules, because Rules cannot use `Vector3`.
 - **Killer attribution:**
   1. If the `OnDied` source resolves to a `CombatActor`, that actor is the killer. A `Character` gives a killer id and faction; an animal gives only its faction.
   2. If the source is null, the killer is the most recent entry in the victim's `DamageLog` within `attributionWindowHours`, or unknown.
@@ -155,8 +155,9 @@ Each person has four independent memberships. They are not nested: a kin group s
 - **Window: 0.25 in-game hours, measured in game time, not `Time.time`.** Future bleed-out and poison damage will tick on in-game hours like starvation does, so a wall-clock window would break as soon as time is sped up. At the default `timeMultiplier` (0.5 h per real minute) 0.25 h is 30 real seconds, which is about the length of one fight plus a short bleed. Starvation counts as unattributed too: a squad member who starves 10 game minutes after a townsperson hit them blames that townsperson. That is acceptable for the demo, because townsfolk do not starve (`hasNeeds = false`).
 
 ### Grudges (4a)
-- `Grudge { string HolderId; string TargetId; string VictimId; int DeathIndex; float Intensity (0..100); int CreatedDay; int LastDecayDay; int Generation; bool HasLastKnown; WorldPoint LastKnown }`. There is at most one grudge per (holder, target).
-- **Created when the holder learns who killed someone they were close to.** All of these must hold:
+- `Grudge { string HolderId; string TargetId; string VictimId; int DeathIndex; GrudgeCause Cause; float Intensity (0..100); int CreatedDay; int LastDecayDay; int Generation; bool Inherited; bool HasLastKnown; WorldPoint LastKnown }`. There is at most one grudge per (holder, target).
+- `GrudgeCause { Killing = 0 }`, an explicit value because it is serialized. 4a only creates `Killing` grudges. It is there so later causes (theft, insult, broken deal) can be added without touching inheritance: only `Killing` grudges are ever inherited, so a stolen bucket never passes to the next generation.
+- **Created when the holder learns who killed someone they were close to.** A killing nobody saw makes no grudge at all (see Knowledge). All of these must hold:
   - the killer is a person (`KillerId` not null) and is not Dead (Gone is allowed);
   - the holder is alive and is neither the killer nor the victim;
   - closeness(holder to victim), from the effective relationship (plus the elder layer for an elder's death), is at least `grudgeClosenessThreshold` (0.35);
@@ -190,7 +191,13 @@ Each person has four independent memberships. They are not nested: a kin group s
 
     Close kin with no shared household or kin group (authored kin only, opinion 0) are lower: child 62, parent or spouse 56, sibling 50 at 0.6 (Rally). Otherwise Hunt needs a very vengeful person, a lover, or two killings.
 - **Decay:** `decayPerDay` (5) per whole in-game day. Each grudge tracks `LastDecayDay`, so a jump of several days applies all of them at once, and a grudge created during a jump decays only from its own day. A grudge below `forgetBelow` is removed. `GrudgeRules.DaysUntilForgotten(intensity, t)` gives the days left for the debug view (a Cold 24 is forgotten after 3 days).
-- **Resolved** (removed) when the target dies, whoever kills them; when blood price is paid (4d); or by decay. Grudges held by someone who dies are removed. If `inheritGrudgesOnHolderDeath` is on (default **off**, open question 3), the dead holder's grudges pass to the holder's close friends (closeness at least the threshold) at `× inheritFactor` (0.5) and generation + 1.
+- **Resolved** (removed) when the target dies, whoever kills them; when blood price is paid (4d); or by decay. Grudges held by someone who dies are removed, except that the hardest ones pass to their children (below).
+- **Inheritance: children take over the hardest grudges** (decided: open question 3).
+  - When a holder dies, every grudge they hold with `Cause == Killing` and intensity at least `inheritAt` (60) is copied into `DeathRecord.InheritableGrudges` (target id, victim id, death index, intensity, generation) before the holder's grudges are removed. Lesser grudges die with the holder.
+  - A **child** of the dead holder (`Child` flag, holder's side) takes them over when they learn of the parent's death, as a witness or through news. Knowing the parent's killer is not needed: a father's grudge passes on even if nobody saw who killed him. Friends, spouses and siblings do not inherit; they already get their own grudges from the killing itself.
+  - The inherited grudge has intensity `× inheritFactor` (0.75), the **same** generation (inheriting is not a new killing, so it does not use up the feud chain), `Inherited = true`, and decays from the day it is taken over. It merges with any grudge the child already holds against that target, and counts toward the child's per-holder cap. It is skipped if the target is dead, or is the child.
+  - Worked example: Veikko's brother is murdered by Jonttuli. Veikko holds 80 (Hunt, close kin). Veikko dies before getting revenge; his son Aatu learns of it and takes over 60 (Rally). Only a sibling, child, parent, spouse or household member's killing reaches 60, so the rule matches "murder of an uncle, not a stolen bucket".
+  - It falls off on its own: a grandchild would need the son's 60 to still be at least 60, and it becomes 45 after one more hand-over, so a feud passes down at most two generations at default tuning, with decay usually ending it sooner.
 - **Feud chaining.** `DeathRecord.FeudGeneration` is 0 for an ordinary killing. If, at the moment of death, the killer held a grudge against the victim (revenge), or the victim held one against the killer (an avenger killed by their target), it is that grudge's generation + 1. Grudges born from a death inherit its generation. Four limits stop chain explosions:
   1. the generation cap (2: murder, revenge, counter-revenge, then nothing more);
   2. the falloff (0.6 per generation);
@@ -210,7 +217,7 @@ Each person has four independent memberships. They are not nested: a kin group s
   - nobody else hears.
   - Pending news is delivered when `SocialWorld` advances the clock. If the holder or the killer has died before delivery, no grudge results.
 - **Corpse:** anyone who loots the body learns of the death.
-- News and corpse inspection reveal the killer only if `KillerWitnessed`. With no witness, the village knows Aino is dead but not who did it. This gives the player a real choice about when and where to fight. It sits behind `newsRevealsKillerOnlyIfWitnessed` (default on, open question 4).
+- News and corpse inspection reveal the killer only if `KillerWitnessed`. **A killing nobody saw causes no grudge** (decided: open question 4); there is no setting for it. With no witness, the village knows Aino is dead but not who did it. This gives the player a real choice about when and where to fight. Children still inherit the dead person's own hardest grudges (see Grudges), because that needs only news of the death, not the killer.
 
 ### Bonds and earned opinion (4b)
 - **Memberships:** a `PersonTies` component holds `tribe` (`TribeDefinition`), `community` (`Community`), `kinGroup` (`KinGroup`) and `household` (`Household`). Registration copies their ids into the `PersonRecord`; derived bonds follow automatically.
@@ -482,13 +489,13 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
        2. Compute `FeudGeneration` from grudges between killer and victim.
        3. Set `KillerWitnessed`: any witness who is not the killer and not Allied with the killer by effective faction.
        4. Set `VictimWasElder` and `ElderOfCommunityId`. Add the record and mark the victim Dead. `Communities.ClearElder(victimId)`.
-       5. Remove grudges against the victim, then grudges held by the victim, with inheritance if enabled.
+       5. Remove grudges against the victim. Snapshot the victim's `Killing` grudges at or above `inheritAt` into `InheritableGrudges`, then remove every grudge the victim held.
        6. Fought-together opinion.
        7. Witnesses learn, closest first, with the per-death cap from `GrudgeCapFor`.
        8. Schedule news for every registered alive non-witness for whom `NewsRules.Delay` is true, at `now + hours`.
        9. Clear the victim's damage log.
-     - `void Learn(personId, deathIndex, bool revealKiller, double now)`: when the killer becomes newly known, evaluate a grudge (the creation rules in the design; closeness from `Relationship(holder, victim)` plus the Elder layer when `ElderOfCommunityId` is the holder's community).
-     - `void Advance(double now)`: deliver due news (`revealKiller = KillerWitnessed || !newsRevealsKillerOnlyIfWitnessed`), then decay every grudge by `DayOf(now) - LastDecayDay` and remove forgotten ones.
+     - `void Learn(personId, deathIndex, bool revealKiller, double now)`: the first time a person learns of a death whose victim they hold `Parent` toward ("the victim is my parent"), take over `InheritableGrudges` (`GrudgeRules.Inherit`, skipping dead targets and themself). Then, when the killer becomes newly known, evaluate a grudge (the creation rules in the design; closeness from `Relationship(holder, victim)` plus the Elder layer when `ElderOfCommunityId` is the holder's community).
+     - `void Advance(double now)`: deliver due news (`revealKiller = KillerWitnessed`), then decay every grudge by `DayOf(now) - LastDecayDay` and remove forgotten ones.
      - `float EffectiveGrudge(holderId, otherId, out Grudge source)`: the direct grudge, or the strongest squad-scope grudge whose target shares `other`'s squad id.
      - `AttitudeResult AttitudeOf(string selfId, string otherId, FactionRelation factionRelation)`: faction only (reason Faction, no refusal) when a record is missing or `self.SquadId != null`. Otherwise `rel = Relationship(self, other)`; `closeKin = Relations.IsCloseKin(self, other)`; `opinion = rel.Opinion`, plus `Tribes.Get(self.TribeId, other.TribeId)` when neither direction has any effective bond flags, clamped to -100..100; `grudge = EffectiveGrudge(self, other)`; then `AttitudeRules.Resolve`.
      - `bool HoldsGrudgeAgainstSquad(holderId, squadId, float minIntensity)`.
@@ -520,9 +527,9 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
      | Grudges: decay and limits | `decayPerDay` / `forgetBelow` / `stackBonus` | 5 / 10 / 10 |
      | | `maxGrudgesPerHolder` / `maxGrudgesPerDeath` / `elderDeathGrudgeCap` | 3 / 4 / 20 |
      | | `maxFeudGeneration` / `generationFalloff` | 2 / 0.6 |
-     | | `inheritGrudgesOnHolderDeath` / `inheritFactor` | false / 0.5 |
+     | | `inheritAt` / `inheritFactor` | 60 / 0.75 |
      | Knowledge | `attributionWindowHours` / `witnessRadius` | 0.25 / 20 |
-     | | `newsDelayHours` / `kinNewsDelayHours` / `newsRevealsKillerOnlyIfWitnessed` | 3 / 24 / true |
+     | | `newsDelayHours` / `kinNewsDelayHours` | 3 / 24 |
      | Revenge: rally and hunt | `rallyRadius` / `rallyCloseness` / `rallyIntensityFactor` / `calloutCooldownSeconds` | 15 / 0.35 / 0.5 / 20 |
      | | `huntGiveUpHours` / `huntSearchRadius` / `gatherRadius` / `maxHuntParty` | 6 / 8 / 30 / 3 |
      | | `gatherBelowRatio` / `huntMinStrengthRatio` | 1.0 / 0.6 |
@@ -605,7 +612,7 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
 
 10. **Knowledge wiring.**
     - Witnesses and news are already in `Sim.RecordDeath` and `Sim.Advance` (step 2). Check that `Social.ReportDeath` passes the witness list, and that `SocialWorld` advances on whole hours.
-    - `Assets/Scripts/Character/Corpse.cs` (hook): in `ExecuteInteraction`, before raising `LootRequested`, call `Social.ReportCorpseInspected(interactor, GetComponent<Character>())`. In `Social`, find the victim's latest `DeathRecord` and call `Sim.Learn(looterId, index, revealKiller: record.KillerWitnessed || !tuning.newsRevealsKillerOnlyIfWitnessed, Now)`.
+    - `Assets/Scripts/Character/Corpse.cs` (hook): in `ExecuteInteraction`, before raising `LootRequested`, call `Social.ReportCorpseInspected(interactor, GetComponent<Character>())`. In `Social`, find the victim's latest `DeathRecord` and call `Sim.Learn(looterId, index, revealKiller: record.KillerWitnessed, Now)`.
     - Done when: the step 14 knowledge tests pass.
 
 11. **Earned opinion.**
@@ -877,7 +884,7 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
     - Knowledge:
       - a news recipient learns after exactly `newsDelayHours` (not at 2.9 h, yes at 3.0 h).
       - an unwitnessed death gives news without the killer and no grudge.
-      - with `newsRevealsKillerOnlyIfWitnessed = false` the grudge appears.
+      - looting the corpse of an unwitnessed death reveals the death but not the killer, and makes no grudge.
       - a killer's faction-Allied comrade does not make `KillerWitnessed` true.
       - learning the same death twice creates the grudge only once.
       - a paid-off grudge does not come back when later news arrives.
@@ -886,8 +893,17 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
       - a person sharing only the tribe never hears.
     - Resolution:
       - the target dies, so every grudge against it is removed.
-      - the holder dies, so its grudges are removed (inheritance off).
-      - with inheritance on, a close friend of the holder gets intensity × 0.5 and generation + 1.
+      - the holder dies, so its grudges are removed.
+    - Inheritance:
+      - a holder with an 80 grudge dies; their child learns of the death through news and holds 60 against the same target, same generation, `Inherited` true.
+      - a 59 grudge (below `inheritAt`) is not inherited.
+      - the holder's friend, spouse and sibling inherit nothing.
+      - the child inherits even when the holder's own death was unwitnessed (killer unknown).
+      - the child inherits nothing until they learn of the death, and only once.
+      - a target who died before the child learns is skipped; a child who is the target is skipped.
+      - inheriting merges with the child's own grudge against the same target (max + `stackBonus`).
+      - hand-over twice: 80 → 60 → 45, and the grandchild of a 60 gets nothing more (45 < 60 is not passed on).
+      - `GrudgeCause` serialized value: `Killing` is 0.
     - Mutual kill: A and B record each other as killer in the same `now`, in both orders. Afterwards no grudges remain.
     - Feud chain:
       1. Gen 0 murder.
@@ -990,6 +1006,7 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
     - `SleepingWitness_DoesNotLearn`.
     - `Household_LearnsAfterNewsDelay`: away from the scene (100 m), no grudge at +2.9 h, a grudge at +3 h.
     - `UnwitnessedKill_HouseholdLearnsDeathButNoGrudge`.
+    - `HolderKilled_ChildInheritsHardGrudge`: Veikko holds an 80 grudge against a stranger and has a son in his household; Veikko is killed with nobody watching; after +3 h the son holds 60 against the stranger and no grudge against Veikko's unknown killer.
     - `LootingCorpse_LearnsDeath`.
     - `AuthoredBond_OverridesDerivedOpinion_AddsFlags`.
     - `TreatWounds_RaisesPatientOpinionOfHealer`: run a `TreatWoundsOrder` to completion with `HealingConfig` set as `CharacterBehaviourTests` does.
@@ -1108,8 +1125,8 @@ All paths are relative to `C:\Users\Eppu\Kanshilike`. "(Editor)" marks steps tha
 ## Open questions
 1. **Roadmap.** `docs/PLAN.md` and `docs/architecture.md` are missing. Are feuds and kinship (tribes, communities, kin groups, elders, grudges, blood price) in the vertical slice demo, or after it? Is there an architecture order this should wait for?
 2. **Parley edge.** The parley ends the moment the offer order ends, with no grace period, so an envoy who is also a target and whose offer is refused is attacked at once. Keep this (send the right goods, or send someone who is not a target), or add a short grace period?
-3. **Inherited grudges.** When a grudge holder dies, should their close friends take the grudge over (×0.5, next generation)? The plan has it behind `inheritGrudgesOnHolderDeath`, default **off**, because killing an avenger already makes generation-1 grudges in the avenger's friends, and inheritance doubles that.
-4. **Unwitnessed killings.** The plan makes news and corpse looting reveal the killer only when someone outside the killer's faction saw the death (`newsRevealsKillerOnlyIfWitnessed`, default on), so the player can avoid a feud by choosing where to fight. Keep this, or let the killer always become known?
+3. ~~**Inherited grudges.**~~ **Decided:** children take over a dead parent's `Killing` grudges of 60 or more at × 0.75, same generation, when they learn of the death. Lesser grudges (and later causes such as theft) are not inherited, and friends inherit nothing. See Grudges.
+4. ~~**Unwitnessed killings.**~~ **Decided:** a killing nobody outside the killer's side saw causes no grudge. News and corpse looting reveal the death but not the killer. No setting.
 5. **Friends do not answer the first blow.** At opinion +60 or more, an NPC treats the first attack as an accident and fights back from the next one, because each attack costs -25. Keep this, or have high opinion affect only talk and recruiting, and always fight back?
 6. **Tribe skill leaning sizes.** Leanings are XP added once at spawn. How large should they be: a nudge (about one level in one or two skills) or a clear identity (two or three levels)? And which skills fit Hämäläiset and Karjalaiset in the current `SkillType` list?
 7. **Should tribe affect attitude at all?** The plan adds a small cultural bias between strangers of different tribes (-10 between Hämäläiset and Karjalaiset), applied only to people with no bond. Keep it, set it to 0 for the demo, or drop the term?
