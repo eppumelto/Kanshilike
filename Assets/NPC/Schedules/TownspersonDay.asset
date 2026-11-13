@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50b8a4bdf60e71f408b0f0be0d5ee1ba, type: 3}
+  m_Name: TownspersonDay
+  m_EditorClassIdentifier: Kanshilike.Game::NpcSchedule
+  entries:
+  - fromHour: 6
+    activity: {fileID: 11400000, guid: 17a7f920716082a49a219576cf9b846a, type: 2}
+    anchorTag: {fileID: 11400000, guid: 9158d40e99d0e3a408b0a607925f577e, type: 2}
+  - fromHour: 9
+    activity: {fileID: 11400000, guid: 4208c67a03149f94e8c7ad1220a86b8e, type: 2}
+    anchorTag: {fileID: 11400000, guid: b6000abc01cc2c14391e3d711e61dc58, type: 2}
+  - fromHour: 17
+    activity: {fileID: 11400000, guid: 4208c67a03149f94e8c7ad1220a86b8e, type: 2}
+    anchorTag: {fileID: 11400000, guid: 2a28ad0da5ac9df4f85ff5ac84455e09, type: 2}
+  - fromHour: 21
+    activity: {fileID: 11400000, guid: be549a4248d49194d88c5c693d0e8b85, type: 2}
+    anchorTag: {fileID: 11400000, guid: beace9c2cfc34da4c910393379503d52, type: 2}

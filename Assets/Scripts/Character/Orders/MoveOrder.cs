@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.AI;
 
 /// <summary>Walk to a point. The player's way out of a fight, so self-defence never overrides it.</summary>
 public sealed class MoveOrder : CharacterOrder
@@ -20,12 +19,11 @@ public sealed class MoveOrder : CharacterOrder
 	{
 		character.MoveTo(destination);
 
-		NavMeshAgent agent = character.Agent;
-		if (agent == null)
+		if (character.Agent == null)
 			yield break;
 
 		// Done once there is no path left to walk (arrived, or as close as the NavMesh allows).
-		while (agent.enabled && (agent.pathPending || (agent.hasPath && agent.remainingDistance > agent.stoppingDistance + ArriveSlack)))
+		while (!OrderMovement.PathDone(character, ArriveSlack))
 			yield return null;
 	}
 }
