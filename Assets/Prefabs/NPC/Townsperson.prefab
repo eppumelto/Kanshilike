@@ -206,6 +206,8 @@ GameObject:
   - component: {fileID: 4131612370007274893}
   - component: {fileID: 3279537103648531153}
   - component: {fileID: 3499024356045851485}
+  - component: {fileID: 2990455775172032060}
+  - component: {fileID: 1991067783565122599}
   m_Layer: 0
   m_Name: Townsperson
   m_TagString: Untagged
@@ -473,3 +475,32 @@ MonoBehaviour:
   archetype: {fileID: 11400000, guid: 7d12fe64fe7414842913cea00c5c3a0a, type: 2}
   assignedAnchors: []
   leader: {fileID: 0}
+--- !u!114 &2990455775172032060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8574251630414023052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8aa5e0abce59854a9bf0e054c451d6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::NpcInteractable
+--- !u!114 &1991067783565122599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8574251630414023052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34e153707a77c404f8500151055be95b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kanshilike.Game::Recruitable
+  costItem: {fileID: 0}
+  costCount: 0
+  enableNeedsOnJoin: 1
+  acceptLines: []
+  refuseLines: []

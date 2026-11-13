@@ -12,11 +12,14 @@ public class InteractionOption
 	public string id;
 	public string displayName;
 	public InteractionKind kind;
+	/// <summary>Only the first selected character does it (talking, recruiting), not the whole selection.</summary>
+	public bool primaryOnly;
 
-	public InteractionOption(string id, string displayName, InteractionKind kind = InteractionKind.Task)
+	public InteractionOption(string id, string displayName, InteractionKind kind = InteractionKind.Task, bool primaryOnly = false)
 	{
 		this.id = id;
 		this.displayName = displayName;
 		this.kind = kind;
+		this.primaryOnly = primaryOnly;
 	}
 }

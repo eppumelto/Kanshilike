@@ -5,6 +5,8 @@ using UnityEngine;
 public sealed class InteractOrder : CharacterOrder
 {
 	private const float ReachDistance = 2f;
+	private const float RecheckSeconds = 0.25f;
+	private const float RetargetDistance = 1f;
 
 	private readonly IInteractable target;
 	private readonly string actionId;
@@ -15,15 +17,31 @@ public sealed class InteractOrder : CharacterOrder
 		this.actionId = actionId;
 	}
 
+	public IInteractable Target => target;
+	public string ActionId => actionId;
+
 	public override IEnumerator Run(Character character)
 	{
 		Vector3 destination = target.GetInteractionPoint();
 		character.MoveTo(destination);
+		float nextRecheck = Time.time + RecheckSeconds;
 
 		while (Vector3.Distance(character.transform.position, destination) > ReachDistance)
 		{
 			if (!CanStillPerform(character))
 				yield break;
+
+			// A moving target (a wandering NPC): head for where it is now.
+			if (Time.time >= nextRecheck)
+			{
+				nextRecheck = Time.time + RecheckSeconds;
+				Vector3 now = target.GetInteractionPoint();
+				if (Vector3.Distance(now, destination) > RetargetDistance)
+				{
+					destination = now;
+					character.MoveTo(destination);
+				}
+			}
 			yield return null;
 		}
 

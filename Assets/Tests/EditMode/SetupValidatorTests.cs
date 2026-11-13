@@ -107,6 +107,37 @@ namespace Kanshilike.Tests.EditMode
 		}
 
 		[Test]
+		public void BrainWithoutInteractable_Warning()
+		{
+			NpcBrain brain = Npc("Aino", Archetype(Entry(9f, idleAt, null)));
+			Object.DestroyImmediate(brain.GetComponent<NpcInteractable>());
+			// The entry has no tag, which also warns; look only for the missing component.
+			SetupIssue issue = SceneIssues().Single(i => i.Message.Contains("no NpcInteractable"));
+			Assert.AreEqual(SetupSeverity.Warning, issue.Severity);
+			Assert.AreSame(brain, issue.Context);
+		}
+
+		[Test]
+		public void InteractableWithoutBrain_Warning()
+		{
+			var go = Track(new GameObject("Loner"));
+			go.SetActive(false);
+			SetField(go.AddComponent<Character>(), "ownFaction", townsfolk);
+			NpcInteractable interactable = go.AddComponent<NpcInteractable>();
+			AssertSingle(SetupSeverity.Warning, "without NpcBrain", interactable);
+		}
+
+		[Test]
+		public void RecruitableCostWithNoItem_Error()
+		{
+			Anchor("StallAnchor", stall);
+			NpcBrain brain = Npc("Aino", Archetype(Entry(9f, idleAt, stall)));
+			Recruitable recruitable = brain.gameObject.AddComponent<Recruitable>();
+			SetField(recruitable, "costCount", 2);
+			AssertSingle(SetupSeverity.Error, "of nothing", recruitable);
+		}
+
+		[Test]
 		public void DuplicateFactionIds_Error()
 		{
 			var a = Make(FactionDefinition.Create("Kin", FactionRelation.Neutral));
@@ -168,6 +199,7 @@ namespace Kanshilike.Tests.EditMode
 			SetField(c, "ownFaction", townsfolk);
 			NpcBrain brain = go.AddComponent<NpcBrain>();
 			SetField(brain, "archetype", archetype);
+			go.AddComponent<NpcInteractable>();
 			return brain;
 		}
 

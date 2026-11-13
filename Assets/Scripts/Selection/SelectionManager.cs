@@ -11,7 +11,8 @@ using UnityEngine.EventSystems;
 ///   double-click       select every squad member on screen
 ///   Ctrl+A             select the whole squad
 ///   right-click        move / interact with the selection
-///                      (a wounded squadmate: one selected character binds their wounds)
+///                      (several options: pick one from a menu;
+///                      a wounded squadmate: one selected character binds their wounds)
 ///   I                  inventory of the selection
 /// </summary>
 public class SelectionManager : MonoBehaviour
@@ -300,6 +301,9 @@ public class SelectionManager : MonoBehaviour
 		if (!Input.GetMouseButtonDown(1) || PointerOverUI || selectedCharacters.Count == 0)
 			return;
 
+		if (InteractionMenu.IsOpen)
+			InteractionMenu.Instance.Hide();
+
 		Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 		if (!Physics.Raycast(ray, out RaycastHit hit))
 			return;
@@ -313,18 +317,15 @@ public class SelectionManager : MonoBehaviour
 		IInteractable interactable = corpse != null ? corpse : hit.collider.GetComponentInParent<IInteractable>();
 		var options = interactable?.GetAvailableInteractions(selectedCharacters[0].Character);
 
-		if (options != null && options.Count > 0)
+		if (options != null && options.Count == 1)
 		{
-			// For now, auto-pick the first action
-			InteractionOption chosenAction = options[0];
-			Debug.Log($"Interacting with {interactable.GetName()} using '{options[0].displayName}'");
-
-			// One looter is enough; everything else is done by the whole selection.
-			if (corpse != null)
-				selectedCharacters[0].Character.InteractWith(interactable, chosenAction);
-			else
-				foreach (var c in selectedCharacters)
-					c.Character.InteractWith(interactable, chosenAction);
+			Dispatch(interactable, options[0], corpse != null);
+		}
+		else if (options != null && options.Count > 1)
+		{
+			bool isCorpse = corpse != null;
+			InteractionMenu.Instance.Show(Input.mousePosition, interactable.GetName(), options,
+				chosen => Dispatch(interactable, chosen, isCorpse));
 		}
 		else
 		{
@@ -332,6 +333,21 @@ public class SelectionManager : MonoBehaviour
 			foreach (var c in selectedCharacters)
 				c.Character.CommandMove(hit.point);
 		}
+	}
+
+	// One looter, talker or recruiter is enough; everything else is done by the whole selection.
+	// Runs later for menu choices, so the selection is read again here.
+	private void Dispatch(IInteractable interactable, InteractionOption option, bool isCorpse)
+	{
+		selectedCharacters.RemoveAll(c => c == null || !c.IsAlive);
+		if (selectedCharacters.Count == 0 || interactable == null || (interactable is Object o && o == null))
+			return;
+
+		if (isCorpse || option.primaryOnly)
+			selectedCharacters[0].Character.InteractWith(interactable, option);
+		else
+			foreach (var c in selectedCharacters)
+				c.Character.InteractWith(interactable, option);
 	}
 
 	// Right-clicking a wounded friendly character: one selected character binds their wounds, preferring

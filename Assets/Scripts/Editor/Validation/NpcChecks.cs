@@ -96,6 +96,16 @@ public class NpcComponentCheck : ISetupCheck
 				issues.Add(new SetupIssue(SetupSeverity.Warning, $"{brain.name}: has both NpcBrain and PlayerControllable; squad members should not have a brain.", brain));
 			if (brain.GetComponent<CombatEntityInteractable>() != null)
 				issues.Add(new SetupIssue(SetupSeverity.Warning, $"{brain.name}: CombatEntityInteractable is for animals; NPCs get NpcInteractable.", brain));
+			if (brain.GetComponent<NpcInteractable>() == null)
+				issues.Add(new SetupIssue(SetupSeverity.Warning, $"{brain.name}: no NpcInteractable; the player can't talk to or attack it by right-click.", brain));
 		}
+
+		foreach (NpcInteractable interactable in ctx.FindInScene<NpcInteractable>())
+			if (interactable.GetComponent<NpcBrain>() == null)
+				issues.Add(new SetupIssue(SetupSeverity.Warning, $"{interactable.name}: NpcInteractable without NpcBrain; Talk won't pause it or use archetype lines.", interactable));
+
+		foreach (Recruitable recruitable in ctx.FindInScene<Recruitable>())
+			if (recruitable.CostCount > 0 && recruitable.CostItem == null)
+				issues.Add(new SetupIssue(SetupSeverity.Error, $"{recruitable.name}: Recruitable asks for {recruitable.CostCount} of nothing; set a cost item or a count of 0.", recruitable));
 	}
 }
