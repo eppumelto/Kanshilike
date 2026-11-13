@@ -28,7 +28,7 @@ public class CharacterStats : MonoBehaviour
 	[Min(0f)] public float dehydrationDamagePerHour = 5f;
 
 	[Header("Healing")]
-	[Tooltip("Regeneration rates. Leave empty for no regeneration (e.g. animals).")]
+	[Tooltip("First Aid settings used when this character treats wounds. Leave empty for creatures that can't (e.g. animals). There is no natural regeneration.")]
 	[SerializeField] private HealingConfig healingConfig;
 	public HealingConfig HealingConfig => healingConfig;
 
@@ -97,16 +97,11 @@ public class CharacterStats : MonoBehaviour
 
 	void UpdateStats(HourTick tick)
 	{
-		if (!IsAlive)
+		if (!IsAlive || !hasNeeds)
 			return;
 
-		if (hasNeeds)
-		{
-			UpdateNeeds(tick);
-			ApplyStarvation();
-		}
-
-		ApplyRegeneration(tick.AsleepFraction);
+		UpdateNeeds(tick);
+		ApplyStarvation();
 	}
 
 	// Hunger, thirst and tiredness for one hour. The part of the hour spent asleep drains needs
@@ -126,19 +121,6 @@ public class CharacterStats : MonoBehaviour
 		tiredness = Mathf.Clamp(tiredness + tiredRate * awake - restPerHour * asleep, 0f, 100f);
 
 		Debug.Log($"{name} -> H:{hunger} T:{thirst} Td:{tiredness}");
-	}
-
-	// Natural and sleep healing, once per in-game hour. Does nothing without a HealingConfig.
-	void ApplyRegeneration(float asleepFraction)
-	{
-		if (healingConfig == null || !IsAlive)
-			return;
-
-		float rate = HealingRules.RegenPerHour(asleepFraction, IsStarving, IsDehydrated,
-			healingConfig.naturalRegenPerHour, healingConfig.sleepRegenPerHour);
-		float gained = Heal(rate);
-		if (gained > 0f)
-			Debug.Log($"{name} healed {gained:F0} HP ({currentHealth:F0}/{maxHealth:F0})");
 	}
 
 	// Empty hunger/thirst bars hurt every hour until the character eats/drinks or dies.

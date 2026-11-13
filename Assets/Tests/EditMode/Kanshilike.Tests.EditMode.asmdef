@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Kanshilike.Rules",
-        "Kanshilike.Game"
+        "Kanshilike.Game",
+        "Kanshilike.Game.Editor"
     ],
     "includePlatforms": [
         "Editor"

@@ -757,19 +757,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22fe50e6b5cac604bb94f10073c3fb93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
-  slots:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  width: 8
+  height: 6
+  entries: []
 --- !u!114 &1872461531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -787,10 +777,15 @@ MonoBehaviour:
   hunger: 100
   thirst: 100
   tiredness: 0
+  hasNeeds: 1
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
-  lastHour: 0
+  restPerHour: 15
+  sleepNeedsMultiplier: 0.5
+  starvationDamagePerHour: 3
+  dehydrationDamagePerHour: 5
+  healingConfig: {fileID: 0}
 --- !u!114 &1872461532
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -804,17 +799,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Keppana
-  isSelected: 0
-  nameText: {fileID: 0}
-  hungerSlider: {fileID: 0}
-  thirstSlider: {fileID: 0}
-  tirednessSlider: {fileID: 0}
-  skillsPanel: {fileID: 0}
   harvestingLabelPrefab: {fileID: 3644526633190687993, guid: 03184ba281438af46b384c7edc5c0811, type: 3}
+  ownFaction: {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
+  legacyFaction: 0
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}
   canUseEquipment: 1
   canBlock: 1
   canCounter: 1
+  selfDefenseChaseDistance: 15
+  autoEatBelow: 40
+  autoDrinkBelow: 40
+  baseCarryCapacity: 30
+  athleticsXPPerMeter: 0.05
+  strengthXPPerLoadedMeter: 0.1
+  harvestXP: 15
 --- !u!195 &1872461533
 NavMeshAgent:
   m_ObjectHideFlags: 0

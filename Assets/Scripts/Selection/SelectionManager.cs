@@ -11,6 +11,7 @@ using UnityEngine.EventSystems;
 ///   double-click       select every squad member on screen
 ///   Ctrl+A             select the whole squad
 ///   right-click        move / interact with the selection
+///                      (a wounded squadmate: one selected character binds their wounds)
 ///   I                  inventory of the selection
 /// </summary>
 public class SelectionManager : MonoBehaviour
@@ -305,6 +306,10 @@ public class SelectionManager : MonoBehaviour
 
 		// A body's own interactions (loot) win over whatever it had while alive.
 		Corpse corpse = hit.collider.GetComponentInParent<Corpse>();
+
+		if (corpse == null && TryOrderTreatment(hit.collider.GetComponentInParent<Character>()))
+			return;
+
 		IInteractable interactable = corpse != null ? corpse : hit.collider.GetComponentInParent<IInteractable>();
 		var options = interactable?.GetAvailableInteractions(selectedCharacters[0].Character);
 
@@ -327,5 +332,32 @@ public class SelectionManager : MonoBehaviour
 			foreach (var c in selectedCharacters)
 				c.Character.CommandMove(hit.point);
 		}
+	}
+
+	// Right-clicking a wounded friendly character: one selected character binds their wounds, preferring
+	// someone other than the patient. Returns false (so the click moves as usual) unless the patient is wounded.
+	private bool TryOrderTreatment(Character patient)
+	{
+		Character primary = selectedCharacters[0].Character;
+		if (patient == null || !patient.IsAlive || patient.Stats == null
+			|| !FactionRelations.AreAllied(primary.Faction, patient.Faction)
+			|| !HealingRules.CanTreat(patient.Stats.currentHealth, patient.Stats.maxHealth))
+			return false;
+
+		string firstReason = null;
+		foreach (bool healerIsPatient in new[] { false, true })
+		{
+			foreach (var c in selectedCharacters)
+			{
+				if ((c.Character == patient) != healerIsPatient)
+					continue;
+				if (c.Character.TryTreatWounds(patient, out string reason))
+					return true;
+				firstReason ??= reason;
+			}
+		}
+
+		primary.ShowFloatingText(firstReason ?? "Can't treat wounds", 2f);
+		return true;
 	}
 }

@@ -191,9 +191,11 @@ MonoBehaviour:
   hungerLossRate: 2
   thirstLossRate: 3
   tirednessGainRate: 1
+  restPerHour: 15
+  sleepNeedsMultiplier: 0.5
   starvationDamagePerHour: 3
   dehydrationDamagePerHour: 5
-  lastHour: 0
+  healingConfig: {fileID: 0}
 --- !u!114 &5185727042713038658
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -223,6 +225,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d64c21433fc681640a825d98317d0a0f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimalAI
+  factionDefinition: {fileID: 11400000, guid: 4f0949f563dae3343a32d614a8babcc8, type: 2}
+  legacyFaction: 1
   personality: {fileID: 11400000, guid: 43ef7ae1bab5d4b4c848b9efe0521245, type: 2}
   behaviorProfile: {fileID: 11400000, guid: 1c719b8af398feb4589fbcb8796fef30, type: 2}
   combatFormulaConfig: {fileID: 11400000, guid: 00595a9681dcd7e4593e9839b2d5efb5, type: 2}

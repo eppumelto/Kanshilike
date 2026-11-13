@@ -1,14 +1,9 @@
 using UnityEngine;
 
+/// <summary>First Aid tuning. Health only comes back through treatment: there is no natural regeneration.</summary>
 [CreateAssetMenu(fileName = "HealingConfig", menuName = "Survival/Healing Config")]
 public class HealingConfig : ScriptableObject
 {
-	[Header("Regeneration (HP per in-game hour)")]
-	[Tooltip("Health regained per hour while awake and not starving or dehydrated.")]
-	[Min(0f)] public float naturalRegenPerHour = 3f;
-	[Tooltip("Health regained per hour while sleeping. Replaces the natural rate.")]
-	[Min(0f)] public float sleepRegenPerHour = 8f;
-
 	[Header("First Aid")]
 	[Tooltip("How strongly the First Aid bonus raises the heal of a dressing. 0 turns the effect off.")]
 	[Min(0f)] public float firstAidHealScale = 1f;
@@ -18,4 +13,10 @@ public class HealingConfig : ScriptableObject
 	[Min(0f)] public float minTreatmentSeconds = 1.5f;
 	[Tooltip("First Aid XP per health point actually restored.")]
 	[Min(0f)] public float firstAidXPPerHealthPoint = 2f;
+
+	[Header("Treatment Limits")]
+	[Tooltip("A dressing may only be used when the patient is missing at least this share of what it would heal (0.5 = half). 0 allows any wound.")]
+	[Range(0f, 1f)] public float minMissingShareOfHeal = 0.5f;
+	[Tooltip("Metres between healer and patient while treating. Moving further apart stops the treatment.")]
+	[Min(0.5f)] public float treatmentReach = 2f;
 }

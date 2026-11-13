@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// A person in the world: walks, fights, carries things, eats and carries out orders. Selection
@@ -27,7 +28,14 @@ public class Character : CombatActor
 	[SerializeField] private GameObject harvestingLabelPrefab;
 
 	[Header("Combat")]
-	[SerializeField] private Faction faction = Faction.Player;
+	[Tooltip("This person's own faction. Squad members always count as Player; a community member uses its community's faction.")]
+	[SerializeField] private FactionDefinition ownFaction;
+	// The old Faction enum value (0 Player, 1 Wildlife), read from scenes saved before factions were
+	// assets. Used only while ownFaction is unset; Kanshilike > Factions > Migrate fills ownFaction.
+	[SerializeField, HideInInspector, FormerlySerializedAs("faction")] private int legacyFaction = 0;
+	private FactionResolution factionResolution;
+	private int factionVersion;
+	private bool factionCached;
 	[SerializeField] private CombatFormulaConfig combatFormulaConfig;
 	[SerializeField] private bool canUseEquipment = true;
 	[SerializeField] private bool canBlock = true;
@@ -82,7 +90,49 @@ public class Character : CombatActor
 		return 0.25f;
 	}
 
-	public override Faction Faction => faction;
+	/// <summary>This person's own faction asset, or the legacy enum mapping when the asset is unset.</summary>
+	public FactionDefinition OwnFaction => ownFaction != null ? ownFaction : FactionRelations.FromLegacy(legacyFaction);
+
+	/// <summary>True while the faction still comes from the pre-asset enum field.</summary>
+	public bool UsesLegacyFaction => ownFaction == null;
+
+	/// <summary>The effective faction: squad, then community, then own (FactionRules.Resolve). Cached.</summary>
+	public override FactionId Faction => FactionResolution.Id;
+
+	public FactionResolution FactionResolution
+	{
+		get
+		{
+			if (!factionCached || factionVersion != CharacterFaction.Version)
+			{
+				FactionDefinition own = OwnFaction;
+				FactionRelations.Register(own);
+
+				PlayerControllable squad = GetComponent<PlayerControllable>();
+				bool inSquad = squad != null && squad.isActiveAndEnabled;
+
+				FactionId community = FactionId.None;
+				if (CharacterFaction.CommunitySource != null)
+					CharacterFaction.CommunitySource.TryGetCommunityFaction(this, out community, out _);
+
+				factionResolution = FactionRules.Resolve(inSquad, community, own != null ? own.FactionId : FactionId.None, FactionRelations.PlayerId);
+				factionVersion = CharacterFaction.Version;
+				factionCached = true;
+			}
+			return factionResolution;
+		}
+	}
+
+	/// <summary>Makes the next Faction read work it out again (squad membership changed).</summary>
+	internal void InvalidateFaction() => factionCached = false;
+
+	/// <summary>Changes this person's own faction at runtime.</summary>
+	public void SetOwnFaction(FactionDefinition value)
+	{
+		ownFaction = value;
+		InvalidateFaction();
+		CharacterFaction.RaiseOwnFactionChanged(this);
+	}
 
 	/// <summary>What the character is doing now, or null when idle.</summary>
 	public CharacterOrder CurrentOrder => currentOrder;
@@ -175,10 +225,11 @@ public class Character : CombatActor
 	private void DefendAgainst(GameObject attacker)
 	{
 		CombatActor enemy = attacker != null ? attacker.GetComponentInParent<CombatActor>() : null;
-		bool hostile = enemy != null && enemy != this && enemy.IsAlive && FactionRelations.AreHostile(Faction, enemy.Faction);
+		// Anyone not allied fights back: a neutral townsperson who is punched hits back.
+		bool fightsBack = enemy != null && enemy != this && enemy.IsAlive && Attitude.FightsBack(this, enemy);
 		bool orderYields = currentOrder == null || currentOrder.YieldsToSelfDefence;
 
-		if (CombatRules.ShouldDefendSelf(IsAlive, orderYields, hostile))
+		if (CombatRules.ShouldDefendSelf(IsAlive, orderYields, fightsBack))
 			GiveOrder(new AttackOrder(enemy, selfDefenseChaseDistance));
 	}
 
@@ -439,15 +490,41 @@ public class Character : CombatActor
 		return entry.item.TryUse(this, entry, out reason);
 	}
 
-	/// <summary>
-	/// Starts binding a wound with a healing item from this character's inventory (see TreatWoundsOrder).
-	/// </summary>
+	/// <summary>Binds this character's own wounds with a healing item from its inventory (see TreatWoundsOrder).</summary>
 	public bool TryTreatWounds(Inventory.Entry entry, out string reason)
+	{
+		return TryTreatWounds(this, entry, out reason);
+	}
+
+	/// <summary>Walks to a squadmate (or stays put for itself) and binds its wounds with the first dressing carried.</summary>
+	public bool TryTreatWounds(Character patient, out string reason)
+	{
+		Inventory.Entry dressing = inventory != null ? inventory.FindFirst<HealingItem>() : null;
+		if (dressing == null)
+		{
+			reason = "No dressings";
+			return false;
+		}
+
+		return TryTreatWounds(patient, dressing, out reason);
+	}
+
+	/// <summary>
+	/// Starts binding the patient's wounds with a healing item from this character's inventory. The
+	/// healer's First Aid skill and HealingConfig decide the heal. Refuses when the dressing would mostly go to waste.
+	/// </summary>
+	public bool TryTreatWounds(Character patient, Inventory.Entry entry, out string reason)
 	{
 		reason = null;
 		if (inventory == null || stats == null || !IsAlive)
 		{
 			reason = "Can't treat wounds";
+			return false;
+		}
+
+		if (patient == null || patient.Stats == null || !patient.IsAlive || FactionRelations.AreHostile(Faction, patient.Faction))
+		{
+			reason = "Can't treat them";
 			return false;
 		}
 
@@ -457,28 +534,39 @@ public class Character : CombatActor
 			return false;
 		}
 
-		if (!HealingRules.CanTreat(stats.currentHealth, stats.maxHealth))
-		{
-			reason = "Not wounded";
-			return false;
-		}
-
 		if (entry == null || !inventory.Contains(entry) || entry.item is not HealingItem item)
 		{
 			reason = "Can't use that";
 			return false;
 		}
 
-		if (stats.HealingConfig == null)
+		HealingConfig config = stats.HealingConfig;
+		if (config == null)
 		{
 			Debug.LogWarning($"{characterName} has no HealingConfig assigned.");
 			reason = "Can't treat wounds";
 			return false;
 		}
 
-		GiveOrder(new TreatWoundsOrder(entry, item));
+		CharacterStats patientStats = patient.Stats;
+		if (!HealingRules.CanTreat(patientStats.currentHealth, patientStats.maxHealth))
+		{
+			reason = "Not wounded";
+			return false;
+		}
+
+		float heal = HealingRules.TreatmentHeal(item.healAmount, FirstAidBonus, config.firstAidHealScale);
+		if (!HealingRules.WorthTreating(patientStats.currentHealth, patientStats.maxHealth, heal, config.minMissingShareOfHeal))
+		{
+			reason = "Not wounded enough";
+			return false;
+		}
+
+		GiveOrder(new TreatWoundsOrder(patient, entry, item));
 		return true;
 	}
+
+	internal float FirstAidBonus => skills != null ? skills.GetBonus(SkillType.FirstAid) : 1f;
 
 	/// <summary>Refills every empty container this drink comes in (e.g. empty waterskins). Returns how many.</summary>
 	public int RefillContainers(DrinkItem drink)

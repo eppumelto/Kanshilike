@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6baa12a41cd3c7c49aa7603e86496b38, type: 3}
+  m_Name: FactionRelations
+  m_EditorClassIdentifier: Kanshilike.Game::FactionRelationSet
+  player: {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
+  legacyEnumOrder:
+  - {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
+  - {fileID: 11400000, guid: 4f0949f563dae3343a32d614a8babcc8, type: 2}
+  factions:
+  - {fileID: 11400000, guid: 8fe377e338733834e99da542789f4c16, type: 2}
+  - {fileID: 11400000, guid: 4f0949f563dae3343a32d614a8babcc8, type: 2}
+  - {fileID: 11400000, guid: e1f7c23111992d043aafcbce3f9c1495, type: 2}
+  - {fileID: 11400000, guid: 80cb1e20a72d1c1489d4a49d3f333a9a, type: 2}
+  - {fileID: 11400000, guid: 0aa00fbf3c54b9e4cbadb9099bf600dc, type: 2}
+  relations: []
